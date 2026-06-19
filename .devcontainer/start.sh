@@ -55,8 +55,9 @@ for _ in $(seq 1 30); do
 done
 
 # Log in to the Aletyx private registry so decision-control can be pulled.
-# Credentials come from Codespaces/repository secrets (ALETYX_* env vars);
-# if any are unset we skip quietly — the other services still come up.
+# Credentials come from Codespaces secrets (ALETYX_* env vars), passed through
+# in devcontainer.json; if any are unset we skip quietly — the other services
+# still come up.
 registry_login() {
   if [ -z "${ALETYX_REGISTRY:-}" ] || [ -z "${ALETYX_USERNAME:-}" ] || [ -z "${ALETYX_PASSWORD:-}" ]; then
     echo "ALETYX_* registry secrets not set; skipping docker login."

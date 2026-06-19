@@ -36,11 +36,19 @@
     "5432": { "label": "postgres", "onAutoForward": "silent" }
   },
 
-  // Optional: provide the private Decision Control image via a Codespaces/
-  // repository secret named DECISION_CONTROL_IMAGE. If unset, .env's value (if
-  // any) is used; otherwise the decision-control process simply stays red.
+  // Optional: provide the private Decision Control image via a Codespaces
+  // secret named DECISION_CONTROL_IMAGE. If unset, .env's value (if any) is
+  // used; otherwise the decision-control process simply stays red.
+  //
+  // ALETYX_* are Codespaces secrets holding the private-registry credentials;
+  // start.sh uses them to `docker login` so decision-control can be pulled.
+  // (Codespaces injects these as env vars; this passthrough also surfaces them
+  // to local Dev Containers when exported on the host.)
   "containerEnv": {
-    "DECISION_CONTROL_IMAGE": "${localEnv:DECISION_CONTROL_IMAGE}"
+    "DECISION_CONTROL_IMAGE": "${localEnv:DECISION_CONTROL_IMAGE}",
+    "ALETYX_REGISTRY": "${localEnv:ALETYX_REGISTRY}",
+    "ALETYX_USERNAME": "${localEnv:ALETYX_USERNAME}",
+    "ALETYX_PASSWORD": "${localEnv:ALETYX_PASSWORD}"
   },
 
   // Pre-link the devbox packages into this workspace and seed .env once at
