@@ -26,5 +26,5 @@ if devbox services ls >/dev/null 2>&1 && devbox services ls 2>/dev/null | grep -
   exit 0
 fi
 
-echo "Starting services (devbox services up --background)..."
-devbox services up --background
+echo "Starting services"
+exec devbox services up 
