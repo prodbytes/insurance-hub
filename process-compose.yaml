@@ -65,7 +65,7 @@ processes:
         path: /q/health/ready
         scheme: http
       initial_delay_seconds: 5
-      period_seconds: 3
+      period_seconds: 15
       timeout_seconds: 5
-      failure_threshold: 40
+      failure_threshold: 120
 
