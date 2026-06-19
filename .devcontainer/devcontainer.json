@@ -1,0 +1,51 @@
+// Dev container for insurance-hub.
+// Works out of the box in GitHub Codespaces (and local VS Code Dev Containers):
+// devbox provides the JDK/Quarkus toolchain, docker-in-docker runs the Postgres
+// and decision-control containers, and the services start automatically on boot.
+{
+  "name": "insurance-hub",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "devbox",
+
+  "features": {
+    // process-compose launches the database + decision-control via `docker run`,
+    // so the container needs its own Docker daemon.
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  "forwardPorts": [8080, 8081, 5432],
+  "portsAttributes": {
+    "8080": { "label": "ih-vdn", "onAutoForward": "silent" },
+    "8081": { "label": "decision-control", "onAutoForward": "silent" },
+    "5432": { "label": "postgres", "onAutoForward": "silent" }
+  },
+
+  // Optional: provide the private Decision Control image via a Codespaces/
+  // repository secret named DECISION_CONTROL_IMAGE. If unset, .env's value (if
+  // any) is used; otherwise the decision-control process simply stays red.
+  "containerEnv": {
+    "DECISION_CONTROL_IMAGE": "${localEnv:DECISION_CONTROL_IMAGE}"
+  },
+
+  // Pre-link the devbox packages into this workspace and seed .env once at
+  // create time (the image already warmed the nix store, so this is fast).
+  "onCreateCommand": "devbox install; [ -f .env ] || cp .env.example .env",
+
+  // Start all processes in the background on every boot. decision-control may
+  // stay red without a private image / registry login — that's fine, the other
+  // services come up independently.
+  "postStartCommand": "bash .devcontainer/start.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "redhat.java",
+        "redhat.vscode-quarkus",
+        "jetpack-io.devbox"
+      ]
+    }
+  }
+}

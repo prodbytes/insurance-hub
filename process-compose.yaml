@@ -1,13 +1,16 @@
-version: "0.5"
-
 processes:
+  # Periodic health check: docker registry auth, database, and ih-vdn readiness.
+  0-health:
+    command: ./scripts/health.sh
+    working_dir: .
+
   # PostgreSQL database, run as a throwaway container for local dev.
-  database:
+  1-database:
     command: >-
       docker run --rm --name insurance-hub-db
-      -e POSTGRES_USER=quarkus
-      -e POSTGRES_PASSWORD=quarkus
-      -e POSTGRES_DB=insurancehub
+      -e POSTGRES_USER=${QUARKUS_DATASOURCE_USERNAME:-quarkus}
+      -e POSTGRES_PASSWORD=${QUARKUS_DATASOURCE_PASSWORD:-quarkus}
+      -e POSTGRES_DB=${POSTGRES_DB:-insurancehub}
       -p 5432:5432
       postgres:16-alpine
     shutdown:
@@ -15,7 +18,7 @@ processes:
       timeout_seconds: 30
     readiness_probe:
       exec:
-        command: docker exec insurance-hub-db pg_isready -U quarkus -d insurancehub
+        command: docker exec insurance-hub-db pg_isready -U ${QUARKUS_DATASOURCE_USERNAME:-quarkus} -d ${POSTGRES_DB:-insurancehub}
       initial_delay_seconds: 3
       period_seconds: 3
       timeout_seconds: 5
@@ -24,10 +27,48 @@ processes:
       restart: on_failure
       backoff_seconds: 5
 
+  # Aletyx Decision Control, run as a throwaway container against the local PostgreSQL.
+  # Host port 8081 -> container 8080 to avoid colliding with ih-vdn on 8080.
+  # --add-host lets the container reach the host's :5432 (the database process) on Linux/WSL2.
+  # Shares the Quarkus database (same role and database, host.docker.internal not localhost
+  # since it runs in a container); Hibernate ddl-auto=update creates its own tables there.
+  2-decision-control:
+    command: >-
+      docker run --rm --name decision-control
+      --add-host=host.docker.internal:host-gateway
+      -p 8081:8080
+      -e SPRING_PROFILES_ACTIVE=postgres
+      -e SPRING_DATASOURCE_URL=${QUARKUS_DATASOURCE_JDBC_URL:-jdbc:postgresql://host.docker.internal:5432/insurancehub}
+      -e SPRING_DATASOURCE_USERNAME=${QUARKUS_DATASOURCE_USERNAME:-quarkus}
+      -e SPRING_DATASOURCE_PASSWORD=${QUARKUS_DATASOURCE_PASSWORD:-quarkus}
+      -e HIBERNATE_DDL_AUTO=update
+      -e ALETYX_OIDC_PROVIDER=none
+      ${DECISION_CONTROL_IMAGE}
+    shutdown:
+      command: docker stop decision-control
+      timeout_seconds: 30
+    depends_on:
+      1-database:
+        condition: process_healthy
+    availability:
+      restart: on_failure
+      backoff_seconds: 5
+
   # ih-vdn Quarkus app in dev mode; starts once the database is accepting connections.
-  app:
+  3-ih-vdn:
     command: ./ih-vdn/scripts/dev-start.sh
     working_dir: .
     depends_on:
-      database:
+      1-database:
         condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        port: 8080
+        path: /q/health/ready
+        scheme: http
+      initial_delay_seconds: 5
+      period_seconds: 3
+      timeout_seconds: 5
+      failure_threshold: 40
+
