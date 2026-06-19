@@ -50,9 +50,6 @@ processes:
     depends_on:
       1-database:
         condition: process_healthy
-    availability:
-      restart: on_failure
-      backoff_seconds: 5
 
   # ih-vdn Quarkus app in dev mode; starts once the database is accepting connections.
   3-ih-vdn:
