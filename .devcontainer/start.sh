@@ -86,6 +86,9 @@ print_endpoints() {
  Services are starting. Once healthy, open:
    • ih-vdn (insurance app) : ${b8080}
    • Decision Control       : ${b8081}
+You can also find the ports on the "Ports" panel, and
+manage running services witn the following command: 
+  devbox services attach
 ────────────────────────────────────────────────────────────
 EOF
 }
