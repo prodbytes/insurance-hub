@@ -36,5 +36,9 @@ settings*.xml
 
 # Claude Code local (personal) overrides — keep shared settings.json tracked
 .claude/settings.local.json
+
 # Local env (seeded from .env.example)
 .env
+.envrc
+*.local.*
+*local
