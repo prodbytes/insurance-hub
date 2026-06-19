@@ -17,6 +17,15 @@
     // which has no moby-cli packages (the feature's default moby:true fails there).
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "moby": false
+    },
+    // gh CLI, baked in at build time so start.sh never has to download it
+    // (used to set port 8080 public in Codespaces).
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    // A standalone JDK on a stable path (JAVA_HOME) so the VS Code Java
+    // language server can compile. GraalVM CE 25 (SDKMAN id `25.0.2-graalce`),
+    // matching devbox's graalvm-ce. The Maven build itself uses devbox via mvnw.
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "25.0.2-graalce"
     }
   },
 
@@ -50,7 +59,19 @@
         "redhat.java",
         "redhat.vscode-quarkus",
         "jetpack-io.devbox"
-      ]
+      ],
+      // The java feature installs via SDKMAN to this stable path and sets
+      // JAVA_HOME; point the language server at it so it can compile.
+      "settings": {
+        "java.jdt.ls.java.home": "/usr/local/sdkman/candidates/java/current",
+        "java.configuration.runtimes": [
+          {
+            "name": "JavaSE-25",
+            "path": "/usr/local/sdkman/candidates/java/current",
+            "default": true
+          }
+        ]
+      }
     }
   }
 }

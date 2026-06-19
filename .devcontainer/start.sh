@@ -54,11 +54,49 @@ for _ in $(seq 1 30); do
   sleep 2
 done
 
+# Log in to the Aletyx private registry so decision-control can be pulled.
+# Credentials come from Codespaces/repository secrets (ALETYX_* env vars);
+# if any are unset we skip quietly — the other services still come up.
+registry_login() {
+  if [ -z "${ALETYX_REGISTRY:-}" ] || [ -z "${ALETYX_USERNAME:-}" ] || [ -z "${ALETYX_PASSWORD:-}" ]; then
+    echo "ALETYX_* registry secrets not set; skipping docker login."
+    return 0
+  fi
+  echo "Logging in to ${ALETYX_REGISTRY}..."
+  printf '%s' "$ALETYX_PASSWORD" \
+    | docker login "$ALETYX_REGISTRY" --username "$ALETYX_USERNAME" --password-stdin \
+    || echo "docker login to ${ALETYX_REGISTRY} failed; decision-control may stay red."
+}
+registry_login
+
+# Print the URLs to reach the apps once they finish starting.
+print_endpoints() {
+  local b8080 b8081
+  if [ -n "${CODESPACE_NAME:-}" ]; then
+    local dom="${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}"
+    b8080="https://${CODESPACE_NAME}-8080.${dom}"
+    b8081="https://${CODESPACE_NAME}-8081.${dom}"
+  else
+    b8080="http://localhost:8080"
+    b8081="http://localhost:8081"
+  fi
+  cat <<EOF
+
+────────────────────────────────────────────────────────────
+ Services are starting. Once healthy, open:
+   • ih-vdn (insurance app) : ${b8080}
+   • Decision Control       : ${b8081}
+────────────────────────────────────────────────────────────
+EOF
+}
+
 # Idempotent: skip if a process-compose instance is already up.
 if devbox services ls >/dev/null 2>&1 && devbox services ls 2>/dev/null | grep -q .; then
   echo "Services already running."
+  print_endpoints
   exit 0
 fi
 
 echo "Starting services (devbox services up --background)..."
 devbox services up --background
+print_endpoints
