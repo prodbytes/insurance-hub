@@ -36,16 +36,17 @@ ensure_gh() {
   command -v gh >/dev/null 2>&1
 }
 
-# In a Codespace, expose the ih-vdn app (8080) publicly. Visibility set in
-# devcontainer.json only applies at creation; this re-applies on every boot.
-make_port_public() {
-  [ -n "${CODESPACE_NAME:-}" ] || { echo "Not a Codespace; skipping public port."; return 0; }
-  ensure_gh || { echo "gh unavailable; set port 8080 visibility manually."; return 0; }
-  echo "Making port 8080 public..."
-  gh codespace ports visibility 8080:public -c "$CODESPACE_NAME" \
-    || echo "Could not set 8080 public (org policy may block public ports)."
+# In a Codespace, expose the ih-vdn app (8080) and decision-control (8081)
+# publicly. Visibility set in devcontainer.json only applies at creation;
+# this re-applies on every boot.
+make_ports_public() {
+  [ -n "${CODESPACE_NAME:-}" ] || { echo "Not a Codespace; skipping public ports."; return 0; }
+  ensure_gh || { echo "gh unavailable; set port visibility manually."; return 0; }
+  echo "Making ports 8080 and 8081 public..."
+  gh codespace ports visibility 8080:public 8081:public -c "$CODESPACE_NAME" \
+    || echo "Could not set ports public (org policy may block public ports)."
 }
-make_port_public || true
+make_ports_public || true
 
 # docker-in-docker may still be starting; wait for the daemon.
 echo "Waiting for Docker daemon..."
