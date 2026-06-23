@@ -32,6 +32,10 @@ processes:
   # --add-host lets the container reach the host's :5432 (the database process) on Linux/WSL2.
   # Shares the Quarkus database (same role and database, host.docker.internal not localhost
   # since it runs in a container); Hibernate ddl-auto=update creates its own tables there.
+  # APP_HOST is the public URL the browser uses to reach DC; the SPA reads it from env.json and
+  # uses it as the base for all its API calls (/ping, /api/authz/*, ...). The image defaults it
+  # to http://localhost:8080, which here is the ih-vdn app, so those calls 404 and the action
+  # cards render disabled. Must match the host-side port (8081).
   2-decision-control:
     command: >-
       docker run --rm --name decision-control
@@ -43,6 +47,7 @@ processes:
       -e SPRING_DATASOURCE_PASSWORD=${DC_DATASOURCE_PASSWORD:-quarkus}
       -e HIBERNATE_DDL_AUTO=update
       -e ALETYX_OIDC_PROVIDER=none
+      -e APP_HOST=${DC_EXTERNAL_URL:-http://localhost:8081}
       ${DECISION_CONTROL_IMAGE}
     shutdown:
       command: docker stop decision-control
@@ -50,13 +55,25 @@ processes:
     depends_on:
       1-database:
         condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        port: 8081
+        path: /
+        scheme: http
+      initial_delay_seconds: 5
+      period_seconds: 15
+      timeout_seconds: 5
+      failure_threshold: 120   
 
-  # ih-vdn Quarkus app in dev mode; starts once the database is accepting connections.
+  # ih-vdn Quarkus app in dev mode; starts once Decision Control is healthy so its
+  # dev-start script can upload the decision models before the app comes up
+  # (decision-control itself waits for the database).
   3-ih-vdn:
     command: ./ih-vdn/scripts/dev-start.sh
     working_dir: .
     depends_on:
-      1-database:
+      2-decision-control:
         condition: process_healthy
     readiness_probe:
       http_get:

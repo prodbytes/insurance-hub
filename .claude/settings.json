@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mvn -q -o compile)"
+      "Bash(mvn -q -o compile)",
+      "Bash(docker exec *)",
+      "Bash(docker cp *)",
+      "Bash(grep -nE '\\\\$\\\\{[A-Z_]+' BOOT-INF/classes/application.yml)",
+      "Bash(curl -s -m 10 http://localhost:8081/api/management/units)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -m 10 http://localhost:8081/api/management/units/1/versions)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(len\\(d\\),'versions:',[\\(v['versionNumber'],v['status']\\) for v in d]\\)\")",
+      "Bash(curl -s -m 10 -X PATCH \"http://localhost:8081/api/management/units/1/versions/1/enable\" -w \"\\\\n--- HTTP %{http_code} ---\\\\n\")"
     ]
   }
 }
