@@ -7,11 +7,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.HashMap;
-import java.util.Random;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ih.domain.QuoteRequest;
@@ -21,24 +23,23 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 /**
- * Calculates insurance quotes. The estimated vehicle value comes from the
- * car-quote DMN model, evaluated by the Aletyx Decision Control engine over its
- * KIE-compatible runtime REST API. Risk and the final premium are still mock.
+ * Calculates insurance quotes. The estimated vehicle value and the risk rate
+ * both come from the car-quote DMN model, evaluated by the Aletyx Decision
+ * Control engine over its KIE-compatible runtime REST API. A single evaluation
+ * returns both outputs; the final premium is derived from them on the response.
  * The request and its computed response are persisted as a one-to-one pair.
  */
 @ApplicationScoped
 public class QuoteService {
 
-    // Mock base annual rate, scaled by the random risk multiplier to form the risk rate.
-    private static final BigDecimal ANNUAL_RATE = BigDecimal.valueOf(0.04);
     private static final String VEHICLE_VALUE_OUTPUT = "Estimated Vehicle Value";
+    private static final String RISK_RATE_OUTPUT = "Risk Rate";
 
     private final EntityManager em;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
-    private final Random random = new Random();
 
-    // Decision Control runtime endpoint for the car-quote model (Estimated Vehicle Value).
+    // Decision Control runtime endpoint for the car-quote model.
     @ConfigProperty(name = "ih.quote.vehicle-price.url")
     String vehiclePriceUrl;
 
@@ -57,18 +58,14 @@ public class QuoteService {
      */
     @Transactional
     public QuoteResponse calculateQuote(QuoteRequest request) {
-        var vehiclePrice = estimateVehiclePrice(request);
-
-        var riskRate = BigDecimal.valueOf(0.5 + random.nextDouble() * 1.5)
-                .multiply(ANNUAL_RATE)
-                .setScale(4, RoundingMode.HALF_UP);
+        var decision = evaluateCarQuote(request);
 
         em.persist(request);
 
         var response = new QuoteResponse();
         response.setRequest(request);
-        response.setEstimatedVehiclePrice(vehiclePrice);
-        response.setRiskRate(riskRate);
+        response.setEstimatedVehiclePrice(decision.vehiclePrice());
+        response.setRiskRate(decision.riskRate());
         em.persist(response);
         return response;
     }
@@ -80,16 +77,22 @@ public class QuoteService {
     }
 
     /**
-     * Calls the Decision Control runtime to evaluate the car-quote DMN model and
-     * returns its {@code Estimated Vehicle Value} as money.
+     * Calls the Decision Control runtime to evaluate the car-quote DMN model
+     * once, returning both the {@code Estimated Vehicle Value} and the
+     * {@code Risk Rate} it computes. The risk rate is driven by the model's
+     * Risk Index, to which mileage, driver age, accidents and tickets each
+     * contribute independently.
      */
-    private BigDecimal estimateVehiclePrice(QuoteRequest request) {
+    private CarQuoteResult evaluateCarQuote(QuoteRequest request) {
         // The model's decision table keys on lowercase make/model.
         var input = new HashMap<String, Object>();
         input.put("Make", lower(request.getMake()));
         input.put("Model", lower(request.getModel()));
         input.put("Year", request.getVehicleYear());
         input.put("Mileage", request.getAnnualMileage());
+        input.put("Driver Age", driverAge(request.getDateOfBirth()));
+        input.put("Accidents", request.isAccidentsLast5Years());
+        input.put("Tickets", request.isViolationsLast3Years());
 
         try {
             var httpRequest = HttpRequest.newBuilder(URI.create(vehiclePriceUrl))
@@ -105,12 +108,10 @@ public class QuoteService {
                         "Decision engine returned HTTP " + httpResponse.statusCode() + ": " + httpResponse.body());
             }
 
-            var value = objectMapper.readTree(httpResponse.body()).get(VEHICLE_VALUE_OUTPUT);
-            if (value == null || value.isNull()) {
-                throw new QuoteCalculationException(
-                        "Decision engine returned no '" + VEHICLE_VALUE_OUTPUT + "' for the given vehicle");
-            }
-            return value.decimalValue().setScale(2, RoundingMode.HALF_UP);
+            var body = objectMapper.readTree(httpResponse.body());
+            var vehiclePrice = required(body, VEHICLE_VALUE_OUTPUT).decimalValue().setScale(2, RoundingMode.HALF_UP);
+            var riskRate = required(body, RISK_RATE_OUTPUT).decimalValue().setScale(4, RoundingMode.HALF_UP);
+            return new CarQuoteResult(vehiclePrice, riskRate);
         } catch (QuoteCalculationException e) {
             throw e;
         } catch (InterruptedException e) {
@@ -121,7 +122,26 @@ public class QuoteService {
         }
     }
 
+    /** A non-null decision output, or a {@link QuoteCalculationException}. */
+    private static JsonNode required(JsonNode body, String output) {
+        var value = body.get(output);
+        if (value == null || value.isNull()) {
+            throw new QuoteCalculationException(
+                    "Decision engine returned no '" + output + "' for the given request");
+        }
+        return value;
+    }
+
+    /** The driver's age in whole years, or {@code null} if no birth date is known. */
+    private static Integer driverAge(LocalDate dateOfBirth) {
+        return dateOfBirth == null ? null : Period.between(dateOfBirth, LocalDate.now()).getYears();
+    }
+
     private static String lower(String value) {
         return value == null ? null : value.toLowerCase();
+    }
+
+    /** The pair of values the car-quote model computes for a request. */
+    private record CarQuoteResult(BigDecimal vehiclePrice, BigDecimal riskRate) {
     }
 }

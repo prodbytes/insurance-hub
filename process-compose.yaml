@@ -30,8 +30,11 @@ processes:
   # Aletyx Decision Control, run as a throwaway container against the local PostgreSQL.
   # Host port 8081 -> container 8080 to avoid colliding with ih-vdn on 8080.
   # --add-host lets the container reach the host's :5432 (the database process) on Linux/WSL2.
-  # Shares the Quarkus database (same role and database, host.docker.internal not localhost
-  # since it runs in a container); Hibernate ddl-auto=update creates its own tables there.
+  # Shares the Quarkus database via POSTGRES_* (host.docker.internal not localhost since it
+  # runs in a container). DC builds its datasource AND detects the DB type from these vars, so
+  # the startup banner reports PostgreSQL correctly; configuring via SPRING_DATASOURCE_URL
+  # instead connects fine but makes DC's detector fall back to reporting "H2 (in-memory)".
+  # Hibernate ddl-auto=update creates its own tables there.
   # APP_HOST is the public URL the browser uses to reach DC; the SPA reads it from env.json and
   # uses it as the base for all its API calls (/ping, /api/authz/*, ...). The image defaults it
   # to http://localhost:8080, which here is the ih-vdn app, so those calls 404 and the action
@@ -42,9 +45,11 @@ processes:
       --add-host=host.docker.internal:host-gateway
       -p 8081:8080
       -e SPRING_PROFILES_ACTIVE=postgres
-      -e SPRING_DATASOURCE_URL=${DC_DATASOURCE_JDBC_URL:-jdbc:postgresql://host.docker.internal:5432/insurancehub}
-      -e SPRING_DATASOURCE_USERNAME=${DC_DATASOURCE_USERNAME:-quarkus}
-      -e SPRING_DATASOURCE_PASSWORD=${DC_DATASOURCE_PASSWORD:-quarkus}
+      -e POSTGRES_HOST=host.docker.internal
+      -e POSTGRES_PORT=5432
+      -e POSTGRES_DB=${POSTGRES_DB:-insurancehub}
+      -e POSTGRES_USER=${DC_DATASOURCE_USERNAME:-quarkus}
+      -e POSTGRES_PASSWORD=${DC_DATASOURCE_PASSWORD:-quarkus}
       -e HIBERNATE_DDL_AUTO=update
       -e ALETYX_OIDC_PROVIDER=none
       -e APP_HOST=${DC_EXTERNAL_URL:-http://localhost:8081}
