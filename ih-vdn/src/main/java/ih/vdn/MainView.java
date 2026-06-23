@@ -47,9 +47,9 @@ public class MainView extends VerticalLayout {
         quote.addClassName("hero__cta");
         quote.addClickListener(e -> quote.getUI().ifPresent(ui -> ui.navigate(QuoteView.class)));
 
-        var learn = new Button("Explore coverage");
+        var learn = new Button("Explore Aletyx");
         learn.addThemeVariants(ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_TERTIARY);
-        learn.addClickListener(e -> learn.getUI().ifPresent(ui -> ui.navigate(AboutView.class)));
+        learn.addClickListener(e -> learn.getUI().ifPresent(ui -> ui.getPage().open("https://aletyx.ai", "_blank")));
 
         var actions = new HorizontalLayout(quote, learn);
         actions.addClassName("hero__actions");

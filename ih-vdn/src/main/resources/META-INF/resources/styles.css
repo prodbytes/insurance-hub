@@ -1,12 +1,31 @@
 /* InsuranceHub — vehicle insurance landing page styles. */
 
+/* Aletyx-inspired palette: orange accents on a near-black background. */
+html {
+    --lumo-primary-color: #ff7700;
+    --lumo-primary-color-50pct: rgba(255, 119, 0, 0.5);
+    --lumo-primary-color-10pct: rgba(255, 119, 0, 0.1);
+    --lumo-primary-text-color: #ff7700;
+    --lumo-primary-contrast-color: #ffffff;
+
+    --lumo-base-color: #0c0d0f;
+    --lumo-body-text-color: #f0f0f0;
+    --lumo-header-text-color: #ffffff;
+    --lumo-secondary-text-color: #9c9c9d;
+
+    --lumo-contrast-5pct: rgba(255, 255, 255, 0.05);
+    --lumo-contrast-10pct: rgba(255, 255, 255, 0.1);
+    --lumo-contrast-20pct: rgba(255, 255, 255, 0.2);
+}
+
 .hero {
     min-height: 100vh;
     justify-content: center;
     align-items: center;
+    color: #f0f0f0;
     background:
-        radial-gradient(1200px 600px at 85% -10%, #dbeafe 0%, transparent 60%),
-        linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+        radial-gradient(1200px 600px at 85% -10%, rgba(235, 75, 4, 0.35) 0%, transparent 60%),
+        linear-gradient(180deg, #0a0b0d 0%, #07080a 100%);
 }
 
 .hero--form {
@@ -39,20 +58,20 @@
     line-height: 1.08;
     font-weight: 800;
     margin: 0.6rem 0 0;
-    color: #0f172a;
+    color: #ffffff;
 }
 
 .hero__subtitle {
     font-size: 1.15rem;
     line-height: 1.6;
-    color: #475569;
+    color: #9c9c9d;
     margin: 1.1rem 0 0;
 }
 
 .hero__section-title {
     font-size: 1.4rem;
     font-weight: 700;
-    color: #0f172a;
+    color: #ffffff;
     margin: 2rem 0 0.75rem;
 }
 
@@ -63,7 +82,7 @@
 }
 
 .hero__cta {
-    box-shadow: 0 10px 25px rgba(29, 78, 216, 0.35);
+    box-shadow: 0 10px 25px rgba(235, 75, 4, 0.45);
 }
 
 .quote-result__price {
@@ -81,7 +100,7 @@
 .quote-result__period {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #475569;
+    color: #9c9c9d;
 }
 
 .quote-result__factors {
@@ -91,31 +110,31 @@
 
 .quote-result__factor {
     padding: 0.85rem 0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .quote-result__factor-name {
     font-weight: 700;
-    color: #0f172a;
+    color: #ffffff;
 }
 
 .quote-result__factor-detail {
     display: block;
     font-size: 0.9rem;
-    color: #64748b;
+    color: #9c9c9d;
     margin-top: 0.15rem;
 }
 
 .quote-result__factor-value {
     font-weight: 700;
-    color: #0f172a;
+    color: #ffffff;
     white-space: nowrap;
 }
 
 .quote-result__disclaimer {
     margin-top: 1.5rem;
     font-size: 0.9rem;
-    color: #94a3b8;
+    color: #6b6b6c;
     font-style: italic;
 }
 
@@ -124,5 +143,5 @@
     max-width: 520px;
     width: 100%;
     height: auto;
-    filter: drop-shadow(0 24px 48px rgba(30, 58, 138, 0.18));
+    filter: drop-shadow(0 24px 48px rgba(235, 75, 4, 0.3));
 }
