@@ -20,8 +20,7 @@ The yearly premium is then simply *estimated value × risk rate*.
 
 ### Why this is "accountable AI"
 
-The decision logic lives in a **DMN model** ([ih-models/car/car-quote.dmn](ih-models/car/car-quote.dmn)) —
-a standardized, human-readable set of decision tables — that is authored, versioned, and
+The decision logic lives in a **decision model** — a standardized, human-readable set of decision tables and rules — that is authored, versioned, and
 governed independently of the application:
 
 - **Transparent** — every rule is an explicit row in a decision table, not weights buried in
