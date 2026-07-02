@@ -13,7 +13,8 @@
       "Bash(docker system *)",
       "Bash(docker run *)",
       "WebSearch",
-      "Bash(curl -s -m 15 \"http://localhost:8081/v3/api-docs\")"
+      "Bash(curl -s -m 15 \"http://localhost:8081/v3/api-docs\")",
+      "Bash(curl -s -m 10 http://localhost:8081/v3/api-docs)"
     ]
   }
 }

@@ -170,9 +170,12 @@ cd ih-vdn
 
 ## Working with the decision model
 
-The model lives at [ih-models/car/car-quote.dmn](ih-models/car/car-quote.dmn). Each direct
-subdirectory of `ih-models/` is a "unit" that is zipped and uploaded to Decision Control by
-[scripts/models-upload.sh](scripts/models-upload.sh) on startup.
+The model lives at [ih-models/car/car-quote.dmn](ih-models/car/car-quote.dmn). Each `.dmn`
+file under `ih-models/` is uploaded to Decision Control by
+[scripts/models-upload.sh](scripts/models-upload.sh) on startup, as a unit named after the
+file (e.g. `car-quote.dmn`) — the same name Decision Control's own "Upload DMN" / editor
+publish flow uses, so publishing an edit from the DC editor adds a version to the same
+unit instead of creating a duplicate one.
 
 > **Note:** the upload script always uploads a *new version* of each unit and enables it,
 > and the app calls the unit's version-independent `/latest` runtime URL — which serves the
