@@ -9,7 +9,11 @@
       "Bash(python3 -m json.tool)",
       "Bash(curl -s -m 10 http://localhost:8081/api/management/units/1/versions)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(len\\(d\\),'versions:',[\\(v['versionNumber'],v['status']\\) for v in d]\\)\")",
-      "Bash(curl -s -m 10 -X PATCH \"http://localhost:8081/api/management/units/1/versions/1/enable\" -w \"\\\\n--- HTTP %{http_code} ---\\\\n\")"
+      "Bash(curl -s -m 10 -X PATCH \"http://localhost:8081/api/management/units/1/versions/1/enable\" -w \"\\\\n--- HTTP %{http_code} ---\\\\n\")",
+      "Bash(docker system *)",
+      "Bash(docker run *)",
+      "WebSearch",
+      "Bash(curl -s -m 15 \"http://localhost:8081/v3/api-docs\")"
     ]
   }
 }

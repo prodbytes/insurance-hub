@@ -3,8 +3,12 @@
 # each model's runtime URL available to the app as an environment variable.
 #
 # Each direct subdirectory of ih-models/ is a "unit": its files are zipped and
-# POSTed to /api/management/upload (the zip's base name becomes the unit name),
-# then the new version is enabled. Units that already exist are left untouched.
+# POSTed to /api/management/upload (the zip's base name becomes the unit name).
+# Uploading a name that already exists creates a new version of that unit, and
+# enabling it makes the unit's /latest runtime URL serve it — so re-running this
+# script after editing a model redeploys the edit. Identical re-uploads still
+# create a version, which is fine for dev: DC state lives in the throwaway
+# database container, so versions never outlive the stack.
 #
 # For units listed in MODEL_URL_VARS, the model's runtime execution URL is
 # resolved from Decision Control and exported under the named variable, which
@@ -47,9 +51,9 @@ models_upload_main() {
   set +e  # explicit error handling below; don't abort a caller running under set -e
 
   local SCRIPT_DIR REPO_ROOT MODELS_DIR DC_BASE_URL UPLOAD_URL UNITS_URL EXPLORER_URL
-  local EMOJI_OK="✅" EMOJI_FAIL="❌" EMOJI_SKIP="⏭️"
+  local EMOJI_OK="✅" EMOJI_FAIL="❌"
   local UNITS_JSON TMP_DIR failures=0 found=0
-  local unit_dir unit_name existing_id zip_path body http_code unit_id version_id enable_code
+  local unit_dir unit_name zip_path body http_code unit_id version_id enable_code
 
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   REPO_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -85,50 +89,44 @@ models_upload_main() {
     unit_name="$(basename "${unit_dir%/}")"
     found=$((found + 1))
 
-    existing_id="$(printf '%s' "$UNITS_JSON" | jq -r --arg n "$unit_name" \
-      '.[] | select(.name == $n) | .id' | head -n1)"
-
-    if [ -n "$existing_id" ]; then
-      echo "$EMOJI_SKIP $unit_name already exists (unit $existing_id) — skipping upload"
-    else
-      if [ -z "$(find "$unit_dir" -type f -print -quit)" ]; then
-        echo "$EMOJI_FAIL $unit_name (no model files, skipped)"
-        failures=$((failures + 1)); continue
-      fi
-
-      zip_path="$TMP_DIR/$unit_name.zip"
-      if ! ( cd "$unit_dir" && zip -qr "$zip_path" . ); then
-        echo "$EMOJI_FAIL $unit_name (zip failed)"
-        failures=$((failures + 1)); continue
-      fi
-
-      body="$(curl -s -m 60 -o - -w $'\n%{http_code}' \
-        -X POST "$UPLOAD_URL" -F "file=@$zip_path;type=application/zip")"
-      http_code="${body##*$'\n'}"
-      body="${body%$'\n'*}"
-      if [ "$http_code" != "200" ]; then
-        echo "$EMOJI_FAIL $unit_name upload failed (HTTP $http_code) $body"
-        failures=$((failures + 1)); continue
-      fi
-
-      unit_id="$(printf '%s' "$body" | jq -r '.unitId // empty')"
-      version_id="$(printf '%s' "$body" | jq -r '.versionId // empty')"
-      if [ -z "$unit_id" ] || [ -z "$version_id" ]; then
-        echo "$EMOJI_FAIL $unit_name uploaded but unitId/versionId missing from response: $body"
-        failures=$((failures + 1)); continue
-      fi
-
-      enable_code="$(curl -s -m 30 -o /dev/null -w '%{http_code}' \
-        -X PATCH "$DC_BASE_URL/api/management/units/$unit_id/versions/$version_id/enable")"
-      if [ "$enable_code" = "200" ]; then
-        echo "$EMOJI_OK $unit_name uploaded and enabled (unit $unit_id, version $version_id)"
-      else
-        echo "$EMOJI_FAIL $unit_name uploaded (unit $unit_id, version $version_id) but enable failed (HTTP $enable_code)"
-        failures=$((failures + 1)); continue
-      fi
+    if [ -z "$(find "$unit_dir" -type f -print -quit)" ]; then
+      echo "$EMOJI_FAIL $unit_name (no model files, skipped)"
+      failures=$((failures + 1)); continue
     fi
 
-    # Whether just uploaded or already present, expose its runtime URL to the app.
+    zip_path="$TMP_DIR/$unit_name.zip"
+    if ! ( cd "$unit_dir" && zip -qr "$zip_path" . ); then
+      echo "$EMOJI_FAIL $unit_name (zip failed)"
+      failures=$((failures + 1)); continue
+    fi
+
+    body="$(curl -s -m 60 -o - -w $'\n%{http_code}' \
+      -X POST "$UPLOAD_URL" -F "file=@$zip_path;type=application/zip")"
+    http_code="${body##*$'\n'}"
+    body="${body%$'\n'*}"
+    if [ "$http_code" != "200" ]; then
+      echo "$EMOJI_FAIL $unit_name upload failed (HTTP $http_code) $body"
+      failures=$((failures + 1)); continue
+    fi
+
+    unit_id="$(printf '%s' "$body" | jq -r '.unitId // empty')"
+    version_id="$(printf '%s' "$body" | jq -r '.versionId // empty')"
+    if [ -z "$unit_id" ] || [ -z "$version_id" ]; then
+      echo "$EMOJI_FAIL $unit_name uploaded but unitId/versionId missing from response: $body"
+      failures=$((failures + 1)); continue
+    fi
+
+    # Enabling the new version is what moves the unit's /latest alias to it.
+    enable_code="$(curl -s -m 30 -o /dev/null -w '%{http_code}' \
+      -X PATCH "$DC_BASE_URL/api/management/units/$unit_id/versions/$version_id/enable")"
+    if [ "$enable_code" = "200" ]; then
+      echo "$EMOJI_OK $unit_name uploaded and enabled (unit $unit_id, version $version_id)"
+    else
+      echo "$EMOJI_FAIL $unit_name uploaded (unit $unit_id, version $version_id) but enable failed (HTTP $enable_code)"
+      failures=$((failures + 1)); continue
+    fi
+
+    # Expose the unit's version-independent /latest runtime URL to the app.
     export_model_url "$unit_name" "$DC_BASE_URL" "$EXPLORER_URL"
   done
 

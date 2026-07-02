@@ -77,6 +77,28 @@ public class QuoteService {
     }
 
     /**
+     * Evaluates only the {@code Estimated Vehicle Value} decision of the
+     * car-quote DMN model. That decision depends solely on make, model and
+     * year, so the risk inputs are omitted.
+     *
+     * @throws QuoteCalculationException if the decision engine cannot be reached
+     *         or returns no value
+     */
+    public BigDecimal estimateVehicleValue(String make, String model, Integer year) {
+        // The model's decision table keys on lowercase make/model.
+        var input = new HashMap<String, Object>();
+        input.put("Make", lower(make));
+        input.put("Model", lower(model));
+        input.put("Year", year);
+        input.put("Mileage", "0");
+        input.put("Driver Age", "42");
+        input.put("Accidents", "false");
+        input.put("Tickets", "false");
+        var body = evaluate(input);
+        return required(body, VEHICLE_VALUE_OUTPUT).decimalValue().setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
      * Calls the Decision Control runtime to evaluate the car-quote DMN model
      * once, returning both the {@code Estimated Vehicle Value} and the
      * {@code Risk Rate} it computes. The risk rate is driven by the model's
@@ -94,6 +116,17 @@ public class QuoteService {
         input.put("Accidents", request.isAccidentsLast5Years());
         input.put("Tickets", request.isViolationsLast3Years());
 
+        var body = evaluate(input);
+        var vehiclePrice = required(body, VEHICLE_VALUE_OUTPUT).decimalValue().setScale(2, RoundingMode.HALF_UP);
+        var riskRate = required(body, RISK_RATE_OUTPUT).decimalValue().setScale(4, RoundingMode.HALF_UP);
+        return new CarQuoteResult(vehiclePrice, riskRate);
+    }
+
+    /**
+     * Posts the given inputs to the Decision Control runtime and returns the
+     * parsed decision outputs.
+     */
+    private JsonNode evaluate(HashMap<String, Object> input) {
         try {
             var httpRequest = HttpRequest.newBuilder(URI.create(vehiclePriceUrl))
                     .header("Content-Type", "application/json")
@@ -108,10 +141,7 @@ public class QuoteService {
                         "Decision engine returned HTTP " + httpResponse.statusCode() + ": " + httpResponse.body());
             }
 
-            var body = objectMapper.readTree(httpResponse.body());
-            var vehiclePrice = required(body, VEHICLE_VALUE_OUTPUT).decimalValue().setScale(2, RoundingMode.HALF_UP);
-            var riskRate = required(body, RISK_RATE_OUTPUT).decimalValue().setScale(4, RoundingMode.HALF_UP);
-            return new CarQuoteResult(vehiclePrice, riskRate);
+            return objectMapper.readTree(httpResponse.body());
         } catch (QuoteCalculationException e) {
             throw e;
         } catch (InterruptedException e) {

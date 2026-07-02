@@ -174,10 +174,11 @@ The model lives at [ih-models/car/car-quote.dmn](ih-models/car/car-quote.dmn). E
 subdirectory of `ih-models/` is a "unit" that is zipped and uploaded to Decision Control by
 [scripts/models-upload.sh](scripts/models-upload.sh) on startup.
 
-> **Note:** the upload script *skips units that already exist* in Decision Control. After
-> editing a model, deploy the change by uploading a new version manually (e.g. through the
-> Decision Control UI at :8081) — re-running the startup upload will not replace an existing
-> unit.
+> **Note:** the upload script always uploads a *new version* of each unit and enables it,
+> and the app calls the unit's version-independent `/latest` runtime URL — which serves the
+> newest *enabled* version. So after editing a model, just re-run the startup upload (or
+> restart `ih-vdn/scripts/dev-start.sh`) and the change is live. Versions uploaded through
+> the Decision Control UI at :8081 also take effect once enabled.
 
 ## Repository layout
 
