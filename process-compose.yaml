@@ -52,7 +52,7 @@ processes:
       -e POSTGRES_PASSWORD=${DC_DATASOURCE_PASSWORD:-quarkus}
       -e HIBERNATE_DDL_AUTO=update
       -e ALETYX_OIDC_PROVIDER=none
-      -e APP_HOST=${DC_EXTERNAL_URL:-http://localhost:8081}
+      -e APP_HOST=${APP_HOST:-http://localhost:8081}
       ${DECISION_CONTROL_IMAGE}
     shutdown:
       command: docker stop decision-control
