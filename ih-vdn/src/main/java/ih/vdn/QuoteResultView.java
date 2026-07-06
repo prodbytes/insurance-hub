@@ -5,6 +5,8 @@ import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.Locale;
 
+import org.jboss.logging.Logger;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.H1;
@@ -21,6 +23,7 @@ import com.vaadin.flow.router.RouterLink;
 
 import ih.domain.QuoteRequest;
 import ih.domain.QuoteResponse;
+import ih.service.ContractService;
 import ih.service.QuoteService;
 
 /**
@@ -32,6 +35,8 @@ import ih.service.QuoteService;
 @Route("quote/result")
 public class QuoteResultView extends VerticalLayout implements HasUrlParameter<Long> {
 
+    private static final Logger LOG = Logger.getLogger(QuoteResultView.class);
+
     private static final NumberFormat MONEY = NumberFormat.getCurrencyInstance(Locale.US);
 
     static {
@@ -39,10 +44,12 @@ public class QuoteResultView extends VerticalLayout implements HasUrlParameter<L
     }
 
     private final QuoteService quoteService;
+    private final ContractService contractService;
     private final VerticalLayout inner = new VerticalLayout();
 
-    public QuoteResultView(QuoteService quoteService) {
+    public QuoteResultView(QuoteService quoteService, ContractService contractService) {
         this.quoteService = quoteService;
+        this.contractService = contractService;
         addClassName("hero");
         addClassName("hero--form");
         setWidthFull();
@@ -104,9 +111,18 @@ public class QuoteResultView extends VerticalLayout implements HasUrlParameter<L
                 "This is a demo application — the quote above is illustrative and not a real insurance offer.");
         disclaimer.addClassName("quote-result__disclaimer");
 
-        var startButton = new Button("Accept and continue");
+        var startButton = new Button("Accept quote and proceed");
         startButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
-        startButton.addClickListener(e -> startButton.getUI().ifPresent(ui -> ui.navigate(ThankYouView.class)));
+        startButton.addClickListener(e -> {
+            try {
+                var instanceId = contractService.startContract(response.getRequest());
+                LOG.infof("Started car-contract process instance %d for quote %d", instanceId, response.getId());
+                startButton.getUI().ifPresent(ui -> ui.navigate(ThankYouView.class));
+            } catch (RuntimeException ex) {
+                LOG.error("Starting the contract process failed", ex);
+                startButton.getUI().ifPresent(ui -> ui.navigate(ErrorView.class));
+            }
+        });
 
         var newQuote = new RouterLink("", QuoteView.class);
         var newQuoteButton = new Button("New quote");

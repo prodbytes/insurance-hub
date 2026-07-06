@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" namespace="https://kie.org/bpmn/_DB0D38FE-D1AC-4352-AC04-7DB60680361E" id="_046C505A-AD85-427E-B862-F776F5723596" name="car-contract" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <itemDefinition id="_makeItem" structureRef="String" />
+  <itemDefinition id="_modelItem" structureRef="String" />
+  <itemDefinition id="_yearItem" structureRef="Integer" />
+  <itemDefinition id="_providerQuotesItem" structureRef="java.util.List" />
+  <itemDefinition id="_providerQuoteItem" structureRef="java.util.Map" />
+  <itemDefinition id="_selectedProviderItem" structureRef="String" />
+  <itemDefinition id="_providerValueItem" structureRef="Double" />
+  <itemDefinition id="_estimatedValueItem" structureRef="java.lang.Number" />
+  <itemDefinition id="_approvedItem" structureRef="Boolean" />
+  <itemDefinition id="_creditApprovedItem" structureRef="Boolean" />
+  <itemDefinition id="_paymentReferenceItem" structureRef="String" />
+  <message id="_providerQuoteMessage" name="providerQuoteResponse" itemRef="_providerQuoteItem" />
+  <message id="_contractPaymentMessage" name="contractPayment" itemRef="_paymentReferenceItem" />
+  <process id="car-contract" name="car-contract" processType="Private" isExecutable="true">
+    <property id="make" itemSubjectRef="_makeItem" name="make" />
+    <property id="model" itemSubjectRef="_modelItem" name="model" />
+    <property id="year" itemSubjectRef="_yearItem" name="year" />
+    <property id="providerQuotes" itemSubjectRef="_providerQuotesItem" name="providerQuotes" />
+    <property id="providerQuote" itemSubjectRef="_providerQuoteItem" name="providerQuote" />
+    <property id="selectedProvider" itemSubjectRef="_selectedProviderItem" name="selectedProvider" />
+    <property id="providerValue" itemSubjectRef="_providerValueItem" name="providerValue" />
+    <property id="estimatedValue" itemSubjectRef="_estimatedValueItem" name="estimatedValue" />
+    <property id="approved" itemSubjectRef="_approvedItem" name="approved" />
+    <property id="creditApproved" itemSubjectRef="_creditApprovedItem" name="creditApproved" />
+    <property id="paymentReference" itemSubjectRef="_paymentReferenceItem" name="paymentReference" />
+    <startEvent id="_start" name="Contract Requested">
+      <outgoing>_f1</outgoing>
+    </startEvent>
+    <scriptTask id="_requestQuotes" name="Request Provider Quotes" scriptFormat="http://www.java.com/java">
+      <incoming>_f1</incoming>
+      <outgoing>_f2</outgoing>
+      <script>kcontext.setVariable("providerQuotes", new java.util.ArrayList());
+System.out.println("[car-contract] Requesting quotes from insurance providers for " + kcontext.getVariable("make") + " " + kcontext.getVariable("model") + " " + kcontext.getVariable("year"));</script>
+    </scriptTask>
+    <intermediateCatchEvent id="_collectWindow" name="Collect Quotes for 1 Minute">
+      <incoming>_f2</incoming>
+      <outgoing>_f3</outgoing>
+      <timerEventDefinition id="_collectWindow_TED">
+        <timeDuration xsi:type="tFormalExpression">PT1M</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <exclusiveGateway id="_anyQuotes" name="Any Quotes Received?" gatewayDirection="Diverging" default="_f4">
+      <incoming>_f3</incoming>
+      <outgoing>_f4</outgoing>
+      <outgoing>_f6</outgoing>
+    </exclusiveGateway>
+    <scriptTask id="_notifyNoQuotes" name="Notify User - No Quotes Available" scriptFormat="http://www.java.com/java">
+      <incoming>_f4</incoming>
+      <outgoing>_f5</outgoing>
+      <script>System.out.println("[car-contract] No provider responded within 1 minute, notifying user that no quotes are available.");</script>
+    </scriptTask>
+    <endEvent id="_endNoQuotes" name="No Quotes">
+      <incoming>_f5</incoming>
+    </endEvent>
+    <scriptTask id="_selectLowest" name="Select Lowest Quote" scriptFormat="http://www.java.com/java">
+      <incoming>_f6</incoming>
+      <outgoing>_f8</outgoing>
+      <script>var quotes = (java.util.List) kcontext.getVariable("providerQuotes");
+var lowest = (java.util.Map) quotes.get(0);
+for (var i = 1; i &lt; quotes.size(); i++) {
+    var candidate = (java.util.Map) quotes.get(i);
+    if (((Number) candidate.get("value")).doubleValue() &lt; ((Number) lowest.get("value")).doubleValue()) {
+        lowest = candidate;
+    }
+}
+kcontext.setVariable("selectedProvider", (String) lowest.get("provider"));
+kcontext.setVariable("providerValue", Double.valueOf(((Number) lowest.get("value")).doubleValue()));
+System.out.println("[car-contract] Selected provider " + lowest.get("provider") + " with quote " + lowest.get("value") + " out of " + quotes.size() + " quote(s)");</script>
+    </scriptTask>
+    <businessRuleTask id="_estimateValue" name="Estimate Vehicle Value" implementation="http://www.jboss.org/drools/dmn">
+      <incoming>_f8</incoming>
+      <outgoing>_f9</outgoing>
+      <ioSpecification>
+        <dataInput id="_estimateValue_namespaceInput" name="namespace" />
+        <dataInput id="_estimateValue_modelInput" name="model" />
+        <dataInput id="_estimateValue_decisionInput" name="decision" />
+        <dataInput id="_estimateValue_MakeInput" name="Make" />
+        <dataInput id="_estimateValue_ModelInput" name="Model" />
+        <dataInput id="_estimateValue_YearInput" name="Year" />
+        <dataOutput id="_estimateValue_EVVOutput" name="Estimated Vehicle Value" />
+        <inputSet>
+          <dataInputRefs>_estimateValue_namespaceInput</dataInputRefs>
+          <dataInputRefs>_estimateValue_modelInput</dataInputRefs>
+          <dataInputRefs>_estimateValue_decisionInput</dataInputRefs>
+          <dataInputRefs>_estimateValue_MakeInput</dataInputRefs>
+          <dataInputRefs>_estimateValue_ModelInput</dataInputRefs>
+          <dataInputRefs>_estimateValue_YearInput</dataInputRefs>
+        </inputSet>
+        <outputSet>
+          <dataOutputRefs>_estimateValue_EVVOutput</dataOutputRefs>
+        </outputSet>
+      </ioSpecification>
+      <dataInputAssociation>
+        <targetRef>_estimateValue_namespaceInput</targetRef>
+        <assignment>
+          <from xsi:type="tFormalExpression">https://kie.org/dmn/_03709CE1-A299-4537-B2BA-39E6E442C1B8</from>
+          <to xsi:type="tFormalExpression">_estimateValue_namespaceInput</to>
+        </assignment>
+      </dataInputAssociation>
+      <dataInputAssociation>
+        <targetRef>_estimateValue_modelInput</targetRef>
+        <assignment>
+          <from xsi:type="tFormalExpression">car-quote</from>
+          <to xsi:type="tFormalExpression">_estimateValue_modelInput</to>
+        </assignment>
+      </dataInputAssociation>
+      <dataInputAssociation>
+        <targetRef>_estimateValue_decisionInput</targetRef>
+        <assignment>
+          <from xsi:type="tFormalExpression">Estimated Vehicle Value</from>
+          <to xsi:type="tFormalExpression">_estimateValue_decisionInput</to>
+        </assignment>
+      </dataInputAssociation>
+      <dataInputAssociation>
+        <sourceRef>make</sourceRef>
+        <targetRef>_estimateValue_MakeInput</targetRef>
+      </dataInputAssociation>
+      <dataInputAssociation>
+        <sourceRef>model</sourceRef>
+        <targetRef>_estimateValue_ModelInput</targetRef>
+      </dataInputAssociation>
+      <dataInputAssociation>
+        <sourceRef>year</sourceRef>
+        <targetRef>_estimateValue_YearInput</targetRef>
+      </dataInputAssociation>
+      <dataOutputAssociation>
+        <sourceRef>_estimateValue_EVVOutput</sourceRef>
+        <targetRef>estimatedValue</targetRef>
+      </dataOutputAssociation>
+    </businessRuleTask>
+    <exclusiveGateway id="_aboveEstimate" name="Provider Above Estimate?" gatewayDirection="Diverging" default="_f11">
+      <incoming>_f9</incoming>
+      <outgoing>_f10</outgoing>
+      <outgoing>_f11</outgoing>
+    </exclusiveGateway>
+    <userTask id="_approveQuote" name="Approve Quote">
+      <incoming>_f10</incoming>
+      <outgoing>_f12</outgoing>
+      <ioSpecification>
+        <dataInput id="_approveQuote_TaskNameInput" name="TaskName" />
+        <dataInput id="_approveQuote_SkippableInput" name="Skippable" />
+        <dataInput id="_approveQuote_selectedProviderInput" name="selectedProvider" />
+        <dataInput id="_approveQuote_providerValueInput" name="providerValue" />
+        <dataInput id="_approveQuote_estimatedValueInput" name="estimatedValue" />
+        <dataOutput id="_approveQuote_approvedOutput" name="approved" />
+        <inputSet>
+          <dataInputRefs>_approveQuote_TaskNameInput</dataInputRefs>
+          <dataInputRefs>_approveQuote_SkippableInput</dataInputRefs>
+          <dataInputRefs>_approveQuote_selectedProviderInput</dataInputRefs>
+          <dataInputRefs>_approveQuote_providerValueInput</dataInputRefs>
+          <dataInputRefs>_approveQuote_estimatedValueInput</dataInputRefs>
+        </inputSet>
+        <outputSet>
+          <dataOutputRefs>_approveQuote_approvedOutput</dataOutputRefs>
+        </outputSet>
+      </ioSpecification>
+      <dataInputAssociation>
+        <targetRef>_approveQuote_TaskNameInput</targetRef>
+        <assignment>
+          <from xsi:type="tFormalExpression">ApproveQuote</from>
+          <to xsi:type="tFormalExpression">_approveQuote_TaskNameInput</to>
+        </assignment>
+      </dataInputAssociation>
+      <dataInputAssociation>
+        <targetRef>_approveQuote_SkippableInput</targetRef>
+        <assignment>
+          <from xsi:type="tFormalExpression">false</from>
+          <to xsi:type="tFormalExpression">_approveQuote_SkippableInput</to>
+        </assignment>
+      </dataInputAssociation>
+      <dataInputAssociation>
+        <sourceRef>selectedProvider</sourceRef>
+        <targetRef>_approveQuote_selectedProviderInput</targetRef>
+      </dataInputAssociation>
+      <dataInputAssociation>
+        <sourceRef>providerValue</sourceRef>
+        <targetRef>_approveQuote_providerValueInput</targetRef>
+      </dataInputAssociation>
+      <dataInputAssociation>
+        <sourceRef>estimatedValue</sourceRef>
+        <targetRef>_approveQuote_estimatedValueInput</targetRef>
+      </dataInputAssociation>
+      <dataOutputAssociation>
+        <sourceRef>_approveQuote_approvedOutput</sourceRef>
+        <targetRef>approved</targetRef>
+      </dataOutputAssociation>
+    </userTask>
+    <exclusiveGateway id="_approvedGw" name="Approved?" gatewayDirection="Diverging" default="_f14">
+      <incoming>_f12</incoming>
+      <outgoing>_f13</outgoing>
+      <outgoing>_f14</outgoing>
+    </exclusiveGateway>
+    <scriptTask id="_notifyRejection" name="Notify User - Quote Rejected" scriptFormat="http://www.java.com/java">
+      <incoming>_f14</incoming>
+      <outgoing>_f15</outgoing>
+      <script>System.out.println("[car-contract] Quote was rejected by the approver, notifying user of the rejection.");</script>
+    </scriptTask>
+    <endEvent id="_endRejected" name="Quote Rejected">
+      <incoming>_f15</incoming>
+    </endEvent>
+    <exclusiveGateway id="_mergeGw" name="Contract Ready" gatewayDirection="Converging">
+      <incoming>_f11</incoming>
+      <incoming>_f13</incoming>
+      <outgoing>_f16</outgoing>
+    </exclusiveGateway>
+    <scriptTask id="_checkCredit" name="Check User Credit" scriptFormat="http://www.java.com/java">
+      <incoming>_f16</incoming>
+      <outgoing>_f25</outgoing>
+      <script>System.out.println("[car-contract] Checking user credit before sending contract (contract value: " + kcontext.getVariable("providerValue") + ")");
+kcontext.setVariable("creditApproved", Boolean.TRUE);</script>
+    </scriptTask>
+    <exclusiveGateway id="_creditGw" name="Credit Approved?" gatewayDirection="Diverging" default="_f27">
+      <incoming>_f25</incoming>
+      <outgoing>_f26</outgoing>
+      <outgoing>_f27</outgoing>
+    </exclusiveGateway>
+    <scriptTask id="_notifyCreditRejected" name="Notify User - Credit Rejected" scriptFormat="http://www.java.com/java">
+      <incoming>_f27</incoming>
+      <outgoing>_f28</outgoing>
+      <script>System.out.println("[car-contract] User credit check failed, notifying user that the contract cannot be sent.");</script>
+    </scriptTask>
+    <endEvent id="_endCreditRejected" name="Credit Rejected">
+      <incoming>_f28</incoming>
+    </endEvent>
+    <scriptTask id="_sendContract" name="Send Contract to User" scriptFormat="http://www.java.com/java">
+      <incoming>_f26</incoming>
+      <outgoing>_f17</outgoing>
+      <script>System.out.println("[car-contract] Sending contract to user. Provider: " + kcontext.getVariable("selectedProvider") + ", value: " + kcontext.getVariable("providerValue"));</script>
+    </scriptTask>
+    <intermediateCatchEvent id="_paymentReceived" name="Payment Received">
+      <incoming>_f17</incoming>
+      <outgoing>_f18</outgoing>
+      <dataOutput id="_paymentReceived_Output" name="event" itemSubjectRef="_paymentReferenceItem" />
+      <dataOutputAssociation>
+        <sourceRef>_paymentReceived_Output</sourceRef>
+        <targetRef>paymentReference</targetRef>
+      </dataOutputAssociation>
+      <outputSet>
+        <dataOutputRefs>_paymentReceived_Output</dataOutputRefs>
+      </outputSet>
+      <messageEventDefinition id="_paymentReceived_MED" messageRef="_contractPaymentMessage" />
+    </intermediateCatchEvent>
+    <scriptTask id="_payProvider" name="Pay Provider" scriptFormat="http://www.java.com/java">
+      <incoming>_f18</incoming>
+      <outgoing>_f19</outgoing>
+      <script>System.out.println("[car-contract] Paying provider " + kcontext.getVariable("selectedProvider") + " (payment reference: " + kcontext.getVariable("paymentReference") + ")");</script>
+    </scriptTask>
+    <parallelGateway id="_forkNotify" name="Notify Parties" gatewayDirection="Diverging">
+      <incoming>_f19</incoming>
+      <outgoing>_f20</outgoing>
+      <outgoing>_f21</outgoing>
+    </parallelGateway>
+    <scriptTask id="_notifyProviderEstablished" name="Notify Provider - Contract Established" scriptFormat="http://www.java.com/java">
+      <incoming>_f20</incoming>
+      <outgoing>_f22</outgoing>
+      <script>System.out.println("[car-contract] Notifying provider " + kcontext.getVariable("selectedProvider") + " that the contract was established.");</script>
+    </scriptTask>
+    <scriptTask id="_notifyUserEstablished" name="Notify User - Contract Established" scriptFormat="http://www.java.com/java">
+      <incoming>_f21</incoming>
+      <outgoing>_f23</outgoing>
+      <script>System.out.println("[car-contract] Notifying user that the contract was established.");</script>
+    </scriptTask>
+    <parallelGateway id="_joinNotify" name="Notifications Sent" gatewayDirection="Converging">
+      <incoming>_f22</incoming>
+      <incoming>_f23</incoming>
+      <outgoing>_f24</outgoing>
+    </parallelGateway>
+    <endEvent id="_endEstablished" name="Contract Established">
+      <incoming>_f24</incoming>
+    </endEvent>
+    <subProcess id="_collectQuotes" name="Collect Provider Quotes" triggeredByEvent="true">
+      <startEvent id="_quoteReceived" name="Provider Quote Received" isInterrupting="false">
+        <outgoing>_cf1</outgoing>
+        <dataOutput id="_quoteReceived_Output" name="event" itemSubjectRef="_providerQuoteItem" />
+        <dataOutputAssociation>
+          <sourceRef>_quoteReceived_Output</sourceRef>
+          <targetRef>providerQuote</targetRef>
+        </dataOutputAssociation>
+        <outputSet>
+          <dataOutputRefs>_quoteReceived_Output</dataOutputRefs>
+        </outputSet>
+        <messageEventDefinition id="_quoteReceived_MED" messageRef="_providerQuoteMessage" />
+      </startEvent>
+      <scriptTask id="_appendQuote" name="Append Quote" scriptFormat="http://www.java.com/java">
+        <incoming>_cf1</incoming>
+        <outgoing>_cf2</outgoing>
+        <script>var quotes = (java.util.List) kcontext.getVariable("providerQuotes");
+var quote = (java.util.Map) kcontext.getVariable("providerQuote");
+quotes.add(quote);
+kcontext.setVariable("providerQuotes", quotes);
+System.out.println("[car-contract] Received quote from provider " + quote.get("provider") + " with value " + quote.get("value") + " (" + quotes.size() + " quote(s) so far)");</script>
+      </scriptTask>
+      <endEvent id="_quoteCollected" name="Quote Collected">
+        <incoming>_cf2</incoming>
+      </endEvent>
+      <sequenceFlow id="_cf1" sourceRef="_quoteReceived" targetRef="_appendQuote" />
+      <sequenceFlow id="_cf2" sourceRef="_appendQuote" targetRef="_quoteCollected" />
+    </subProcess>
+    <sequenceFlow id="_f1" sourceRef="_start" targetRef="_requestQuotes" />
+    <sequenceFlow id="_f2" sourceRef="_requestQuotes" targetRef="_collectWindow" />
+    <sequenceFlow id="_f3" sourceRef="_collectWindow" targetRef="_anyQuotes" />
+    <sequenceFlow id="_f4" name="no" sourceRef="_anyQuotes" targetRef="_notifyNoQuotes" />
+    <sequenceFlow id="_f5" sourceRef="_notifyNoQuotes" targetRef="_endNoQuotes" />
+    <sequenceFlow id="_f6" name="yes" sourceRef="_anyQuotes" targetRef="_selectLowest">
+      <conditionExpression xsi:type="tFormalExpression" language="http://www.java.com/java">return providerQuotes != null &amp;&amp; !providerQuotes.isEmpty();</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="_f8" sourceRef="_selectLowest" targetRef="_estimateValue" />
+    <sequenceFlow id="_f9" sourceRef="_estimateValue" targetRef="_aboveEstimate" />
+    <sequenceFlow id="_f10" name="yes" sourceRef="_aboveEstimate" targetRef="_approveQuote">
+      <conditionExpression xsi:type="tFormalExpression" language="http://www.java.com/java">return providerValue != null &amp;&amp; estimatedValue != null &amp;&amp; providerValue.doubleValue() &gt; estimatedValue.doubleValue();</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="_f11" name="no" sourceRef="_aboveEstimate" targetRef="_mergeGw" />
+    <sequenceFlow id="_f12" sourceRef="_approveQuote" targetRef="_approvedGw" />
+    <sequenceFlow id="_f13" name="yes" sourceRef="_approvedGw" targetRef="_mergeGw">
+      <conditionExpression xsi:type="tFormalExpression" language="http://www.java.com/java">return approved != null &amp;&amp; approved.booleanValue();</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="_f14" name="no" sourceRef="_approvedGw" targetRef="_notifyRejection" />
+    <sequenceFlow id="_f15" sourceRef="_notifyRejection" targetRef="_endRejected" />
+    <sequenceFlow id="_f16" sourceRef="_mergeGw" targetRef="_checkCredit" />
+    <sequenceFlow id="_f25" sourceRef="_checkCredit" targetRef="_creditGw" />
+    <sequenceFlow id="_f26" name="yes" sourceRef="_creditGw" targetRef="_sendContract">
+      <conditionExpression xsi:type="tFormalExpression" language="http://www.java.com/java">return creditApproved != null &amp;&amp; creditApproved.booleanValue();</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="_f27" name="no" sourceRef="_creditGw" targetRef="_notifyCreditRejected" />
+    <sequenceFlow id="_f28" sourceRef="_notifyCreditRejected" targetRef="_endCreditRejected" />
+    <sequenceFlow id="_f17" sourceRef="_sendContract" targetRef="_paymentReceived" />
+    <sequenceFlow id="_f18" sourceRef="_paymentReceived" targetRef="_payProvider" />
+    <sequenceFlow id="_f19" sourceRef="_payProvider" targetRef="_forkNotify" />
+    <sequenceFlow id="_f20" sourceRef="_forkNotify" targetRef="_notifyProviderEstablished" />
+    <sequenceFlow id="_f21" sourceRef="_forkNotify" targetRef="_notifyUserEstablished" />
+    <sequenceFlow id="_f22" sourceRef="_notifyProviderEstablished" targetRef="_joinNotify" />
+    <sequenceFlow id="_f23" sourceRef="_notifyUserEstablished" targetRef="_joinNotify" />
+    <sequenceFlow id="_f24" sourceRef="_joinNotify" targetRef="_endEstablished" />
+  </process>
+  <bpmndi:BPMNDiagram id="_7C9158DD-54C9-4CC4-8BC1-A7AC940C588F">
+    <bpmndi:BPMNPlane id="_E05DCD0A-DF76-4CC7-8D47-BF5C5B2EA16E" bpmnElement="car-contract">
+      <bpmndi:BPMNShape id="_shape_start" bpmnElement="_start">
+        <dc:Bounds x="100" y="232" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_requestQuotes" bpmnElement="_requestQuotes">
+        <dc:Bounds x="216" y="230" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_collectWindow" bpmnElement="_collectWindow">
+        <dc:Bounds x="430" y="232" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_anyQuotes" bpmnElement="_anyQuotes">
+        <dc:Bounds x="546" y="232" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_notifyNoQuotes" bpmnElement="_notifyNoQuotes">
+        <dc:Bounds x="662" y="390" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_endNoQuotes" bpmnElement="_endNoQuotes">
+        <dc:Bounds x="876" y="392" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_selectLowest" bpmnElement="_selectLowest">
+        <dc:Bounds x="662" y="230" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_estimateValue" bpmnElement="_estimateValue">
+        <dc:Bounds x="876" y="230" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_aboveEstimate" bpmnElement="_aboveEstimate">
+        <dc:Bounds x="1090" y="232" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_approveQuote" bpmnElement="_approveQuote">
+        <dc:Bounds x="1206" y="390" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_approvedGw" bpmnElement="_approvedGw">
+        <dc:Bounds x="1420" y="392" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_notifyRejection" bpmnElement="_notifyRejection">
+        <dc:Bounds x="1536" y="510" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_endRejected" bpmnElement="_endRejected">
+        <dc:Bounds x="1750" y="512" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_mergeGw" bpmnElement="_mergeGw">
+        <dc:Bounds x="1420" y="232" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_checkCredit" bpmnElement="_checkCredit">
+        <dc:Bounds x="1536" y="230" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_creditGw" bpmnElement="_creditGw">
+        <dc:Bounds x="1750" y="232" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_notifyCreditRejected" bpmnElement="_notifyCreditRejected">
+        <dc:Bounds x="1866" y="390" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_endCreditRejected" bpmnElement="_endCreditRejected">
+        <dc:Bounds x="2080" y="392" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_sendContract" bpmnElement="_sendContract">
+        <dc:Bounds x="1866" y="230" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_paymentReceived" bpmnElement="_paymentReceived">
+        <dc:Bounds x="2080" y="232" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_payProvider" bpmnElement="_payProvider">
+        <dc:Bounds x="2196" y="230" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_forkNotify" bpmnElement="_forkNotify">
+        <dc:Bounds x="2410" y="232" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_notifyProviderEstablished" bpmnElement="_notifyProviderEstablished">
+        <dc:Bounds x="2526" y="130" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_notifyUserEstablished" bpmnElement="_notifyUserEstablished">
+        <dc:Bounds x="2526" y="330" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_joinNotify" bpmnElement="_joinNotify">
+        <dc:Bounds x="2740" y="232" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_endEstablished" bpmnElement="_endEstablished">
+        <dc:Bounds x="2856" y="232" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_collectQuotes" bpmnElement="_collectQuotes" isExpanded="true">
+        <dc:Bounds x="100" y="560" width="460" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_quoteReceived" bpmnElement="_quoteReceived">
+        <dc:Bounds x="140" y="602" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_appendQuote" bpmnElement="_appendQuote">
+        <dc:Bounds x="250" y="600" width="154" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_shape_quoteCollected" bpmnElement="_quoteCollected">
+        <dc:Bounds x="460" y="602" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="_edge_f1" bpmnElement="_f1">
+        <di:waypoint x="128" y="260" />
+        <di:waypoint x="293" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f2" bpmnElement="_f2">
+        <di:waypoint x="293" y="260" />
+        <di:waypoint x="458" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f3" bpmnElement="_f3">
+        <di:waypoint x="458" y="260" />
+        <di:waypoint x="574" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f4" bpmnElement="_f4">
+        <di:waypoint x="574" y="260" />
+        <di:waypoint x="574" y="420" />
+        <di:waypoint x="739" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f5" bpmnElement="_f5">
+        <di:waypoint x="739" y="420" />
+        <di:waypoint x="904" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f6" bpmnElement="_f6">
+        <di:waypoint x="574" y="260" />
+        <di:waypoint x="739" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f8" bpmnElement="_f8">
+        <di:waypoint x="739" y="260" />
+        <di:waypoint x="953" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f9" bpmnElement="_f9">
+        <di:waypoint x="953" y="260" />
+        <di:waypoint x="1118" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f10" bpmnElement="_f10">
+        <di:waypoint x="1118" y="260" />
+        <di:waypoint x="1118" y="420" />
+        <di:waypoint x="1283" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f11" bpmnElement="_f11">
+        <di:waypoint x="1118" y="260" />
+        <di:waypoint x="1448" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f12" bpmnElement="_f12">
+        <di:waypoint x="1283" y="420" />
+        <di:waypoint x="1448" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f13" bpmnElement="_f13">
+        <di:waypoint x="1448" y="420" />
+        <di:waypoint x="1448" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f14" bpmnElement="_f14">
+        <di:waypoint x="1448" y="420" />
+        <di:waypoint x="1448" y="540" />
+        <di:waypoint x="1613" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f15" bpmnElement="_f15">
+        <di:waypoint x="1613" y="540" />
+        <di:waypoint x="1778" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f16" bpmnElement="_f16">
+        <di:waypoint x="1448" y="260" />
+        <di:waypoint x="1613" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f25" bpmnElement="_f25">
+        <di:waypoint x="1613" y="260" />
+        <di:waypoint x="1778" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f26" bpmnElement="_f26">
+        <di:waypoint x="1778" y="260" />
+        <di:waypoint x="1943" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f27" bpmnElement="_f27">
+        <di:waypoint x="1778" y="260" />
+        <di:waypoint x="1778" y="420" />
+        <di:waypoint x="1943" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f28" bpmnElement="_f28">
+        <di:waypoint x="1943" y="420" />
+        <di:waypoint x="2108" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f17" bpmnElement="_f17">
+        <di:waypoint x="1943" y="260" />
+        <di:waypoint x="2108" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f18" bpmnElement="_f18">
+        <di:waypoint x="2108" y="260" />
+        <di:waypoint x="2273" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f19" bpmnElement="_f19">
+        <di:waypoint x="2273" y="260" />
+        <di:waypoint x="2438" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f20" bpmnElement="_f20">
+        <di:waypoint x="2438" y="260" />
+        <di:waypoint x="2438" y="160" />
+        <di:waypoint x="2603" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f21" bpmnElement="_f21">
+        <di:waypoint x="2438" y="260" />
+        <di:waypoint x="2438" y="360" />
+        <di:waypoint x="2603" y="360" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f22" bpmnElement="_f22">
+        <di:waypoint x="2603" y="160" />
+        <di:waypoint x="2768" y="160" />
+        <di:waypoint x="2768" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f23" bpmnElement="_f23">
+        <di:waypoint x="2603" y="360" />
+        <di:waypoint x="2768" y="360" />
+        <di:waypoint x="2768" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_f24" bpmnElement="_f24">
+        <di:waypoint x="2768" y="260" />
+        <di:waypoint x="2884" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_cf1" bpmnElement="_cf1">
+        <di:waypoint x="168" y="630" />
+        <di:waypoint x="327" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="_edge_cf2" bpmnElement="_cf2">
+        <di:waypoint x="327" y="630" />
+        <di:waypoint x="488" y="630" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

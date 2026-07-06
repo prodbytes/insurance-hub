@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Upload every DMN model under ih-models/ to Aletyx Decision Control and make
 # each model's runtime URL available to the app as an environment variable.
+# BPMN models are NOT handled here — process deployment happens separately.
 #
 # Each .dmn file under ih-models/ is uploaded individually as a single-file
 # zip named "<file>.zip" (the upload endpoint only accepts zips, and names the
@@ -59,7 +60,7 @@ models_upload_main() {
   local SCRIPT_DIR REPO_ROOT UPLOAD_URL UNITS_URL EXPLORER_URL
   local EMOJI_OK="✅" EMOJI_FAIL="❌"
   local UNITS_JSON TMP_DIR failures=0 found=0
-  local dmn_file unit_name model_name zip_path body http_code unit_id version_id enable_code
+  local model_file unit_name model_name zip_path body http_code unit_id version_id enable_code
 
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   REPO_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -90,23 +91,23 @@ models_upload_main() {
   fi
 
   TMP_DIR="$(mktemp -d)"
-  echo "Uploading DMN models from $MODELS_DIR to $UPLOAD_URL"
+  echo "Uploading models from $MODELS_DIR to $UPLOAD_URL"
 
-  while IFS= read -r -d '' dmn_file; do
-    unit_name="$(basename "$dmn_file")"
-    model_name="$(basename "$dmn_file" .dmn)"
+  while IFS= read -r -d '' model_file; do
+    unit_name="$(basename "$model_file")"
+    model_name="${unit_name%.*}"
     found=$((found + 1))
 
     # DMN editors name new models "DMN_<uuid>"; Decision Control displays that
     # name, not the file name. Rewrite auto-generated names to the file's base
     # name — in the source tree, so the repo, the editor, and DC all agree.
-    if grep -q '<definitions .*name="DMN_[0-9A-Fa-f-]\{36\}"' "$dmn_file"; then
-      sed -i "/<definitions /s/name=\"DMN_[0-9A-Fa-f-]\{36\}\"/name=\"$model_name\"/" "$dmn_file"
-      echo "   ↳ renamed auto-generated model name in ${dmn_file#"$MODELS_DIR"/} to '$model_name'"
+    if grep -q '<definitions .*name="DMN_[0-9A-Fa-f-]\{36\}"' "$model_file"; then
+      sed -i "/<definitions /s/name=\"DMN_[0-9A-Fa-f-]\{36\}\"/name=\"$model_name\"/" "$model_file"
+      echo "   ↳ renamed auto-generated model name in ${model_file#"$MODELS_DIR"/} to '$model_name'"
     fi
 
     zip_path="$TMP_DIR/$unit_name.zip"
-    if ! zip -qj "$zip_path" "$dmn_file"; then
+    if ! zip -qj "$zip_path" "$model_file"; then
       echo "$EMOJI_FAIL $unit_name (zip failed)"
       failures=$((failures + 1)); continue
     fi
