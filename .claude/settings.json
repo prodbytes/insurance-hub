@@ -14,7 +14,14 @@
       "Bash(docker run *)",
       "WebSearch",
       "Bash(curl -s -m 15 \"http://localhost:8081/v3/api-docs\")",
-      "Bash(curl -s -m 10 http://localhost:8081/v3/api-docs)"
+      "Bash(curl -s -m 10 http://localhost:8081/v3/api-docs)",
+      "Bash(curl -s -m 10 http://localhost:*)",
+      "Bash(curl -s -m 15 http://localhost:*)",
+      "Bash(curl -s -o /dev/null -w *)",
+      "Bash(curl -sI *)",
+      "Bash(unzip -l *)",
+      "Bash(python3 -m json.tool *)",
+      "mcp__mintlify-docs__search_mintlify"
     ]
   }
 }

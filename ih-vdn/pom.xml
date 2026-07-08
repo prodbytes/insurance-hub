@@ -76,6 +76,11 @@
             <version>${vaadin.version}</version>
         </dependency>
         <dependency>
+            <groupId>software.xdev.vaadin.maps-leaflet</groupId>
+            <artifactId>flow</artifactId>
+            <version>6.0.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest</artifactId>
         </dependency>
