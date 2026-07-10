@@ -145,3 +145,117 @@ html {
     height: auto;
     filter: drop-shadow(0 24px 48px rgba(235, 75, 4, 0.3));
 }
+
+/* Admin section: top navbar, map content, events side panel. */
+
+.admin {
+    height: 100vh;
+    overflow: hidden;
+    background: #0c0d0f;
+}
+
+.admin__navbar {
+    padding: 0.65rem 1.25rem;
+    background: #101114;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.admin__brand {
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #ffffff;
+}
+
+.admin__nav a {
+    padding: 0.4rem 0.9rem;
+    border-radius: 6px;
+    font-weight: 600;
+    color: #9c9c9d;
+    text-decoration: none;
+}
+
+.admin__nav a:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.admin__nav a[highlight] {
+    color: var(--lumo-primary-color);
+    background: var(--lumo-primary-color-10pct);
+}
+
+.admin__content {
+    min-height: 0;
+}
+
+.admin-events {
+    background: #101114;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0;
+    gap: 0.55rem;
+    scrollbar-gutter: stable;
+}
+
+.admin-events__title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--lumo-primary-color);
+}
+
+.admin-event {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-event__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.3rem;
+}
+
+.admin-event__vehicle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.admin-event__time {
+    font-size: 0.75rem;
+    color: #6b6b6c;
+}
+
+.admin-event__row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.1rem 0;
+    font-size: 0.82rem;
+}
+
+.admin-event__label {
+    color: #9c9c9d;
+}
+
+.admin-event__value {
+    font-weight: 600;
+    color: #f0f0f0;
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-settings {
+    padding: 1.5rem 2rem;
+    max-width: 480px;
+}
+
+.admin-settings__note {
+    font-size: 0.9rem;
+    color: #6b6b6c;
+    font-style: italic;
+}

@@ -11,6 +11,8 @@ public class AppConfig implements AppShellConfigurator {
 
     @Override
     public void configurePage(AppShellSettings settings) {
-        settings.addFavIcon("icon", "favicon.svg", "32x32");
+        // Absolute path: views served under /app/* would otherwise resolve the
+        // icon relative to the page URL and 404.
+        settings.addFavIcon("icon", "/favicon.svg", "32x32");
     }
 }
