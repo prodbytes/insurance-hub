@@ -79,7 +79,7 @@ System.out.println("[car-contract] Selected provider " + lowest.get("provider") 
         <dataInput id="_estimateValue_MakeInput" name="Make" />
         <dataInput id="_estimateValue_ModelInput" name="Model" />
         <dataInput id="_estimateValue_YearInput" name="Year" />
-        <dataOutput id="_estimateValue_EVVOutput" name="Estimated Vehicle Value" />
+        <dataOutput id="_estimateValue_EVVOutput" name="carEstimatedValue" />
         <inputSet>
           <dataInputRefs>_estimateValue_namespaceInput</dataInputRefs>
           <dataInputRefs>_estimateValue_modelInput</dataInputRefs>
@@ -102,14 +102,14 @@ System.out.println("[car-contract] Selected provider " + lowest.get("provider") 
       <dataInputAssociation>
         <targetRef>_estimateValue_modelInput</targetRef>
         <assignment>
-          <from xsi:type="tFormalExpression">car-quote</from>
+          <from xsi:type="tFormalExpression">carQuote</from>
           <to xsi:type="tFormalExpression">_estimateValue_modelInput</to>
         </assignment>
       </dataInputAssociation>
       <dataInputAssociation>
         <targetRef>_estimateValue_decisionInput</targetRef>
         <assignment>
-          <from xsi:type="tFormalExpression">Estimated Vehicle Value</from>
+          <from xsi:type="tFormalExpression">carEstimatedValue</from>
           <to xsi:type="tFormalExpression">_estimateValue_decisionInput</to>
         </assignment>
       </dataInputAssociation>

@@ -28,7 +28,17 @@
 # Unit name (= model file name) -> environment variable that should receive its
 # runtime URL.
 declare -A MODEL_URL_VARS=(
-  ["car-quote.dmn"]="IH_QUOTE_VEHICLE_PRICE_URL"
+  ["carQuote.dmn"]="IH_QUOTE_VEHICLE_PRICE_URL"
+)
+
+# Unit name -> space-separated list of model files (relative to MODELS_DIR)
+# the unit imports. DMN imports must be packaged in the same unit zip as the
+# importing model or the runtime cannot resolve them. An imported model with
+# the regular .dmn extension is also picked up by the main loop and uploaded
+# as a unit of its own; use the .dmns extension for import-only models that
+# should not be deployed standalone.
+declare -A MODEL_IMPORTS=(
+  ["carQuote.dmn"]="quote/carEstimatedValue.dmn"
 )
 
 # Resolves a unit's model runtime URL from Decision Control and exports it under
@@ -38,15 +48,41 @@ export_model_url() {
   var_name="${MODEL_URL_VARS[$unit_name]:-}"
   [ -n "$var_name" ] || return 0
 
-  # The bare execution path is /api/runtime/0/<unit>/latest/<modelId> — pick it
-  # (excluding the sibling .../latest/batch path) so the model id isn't hard-coded.
-  url_path="$(curl -s -m 15 "$explorer_url" \
-    | jq -r --arg prefix "/api/runtime/0/$unit_name/latest/" '.paths | keys[]
-        | select(startswith($prefix))
-        | select((ltrimstr($prefix) | contains("/") or . == "batch") | not)' | head -n1)"
+  # The bare execution path is /api/runtime/<tenant>/<unit>/latest/<modelId> —
+  # pick it (excluding the sibling .../latest/batch and .../<modelId>/{batch,schema}
+  # paths) without hard-coding the tenant or the model id.
+  local api_docs candidates
+  api_docs="$(curl -s -m 15 "$explorer_url")"
+  candidates="$(printf '%s' "$api_docs" \
+    | jq -r --arg unit "$unit_name" '.paths // {} | keys[]
+        | select(startswith("/api/runtime/"))
+        | select((ltrimstr("/api/runtime/") | split("/"))
+            | length == 4 and .[1] == $unit and .[2] == "latest" and .[3] != "batch")')"
+  url_path="$(printf '%s\n' "$candidates" | head -n1)"
+
+  # A unit zip can bundle imported models (see MODEL_IMPORTS), which gives the
+  # unit one runtime path per model. Prefer the path whose model id segment or
+  # operation entry mentions the unit's own model name.
+  if [ "$(printf '%s\n' "$candidates" | grep -c .)" -gt 1 ]; then
+    local named_path
+    named_path="$(printf '%s' "$api_docs" \
+      | jq -r --arg unit "$unit_name" --arg model "${unit_name%.*}" '.paths // {} | to_entries[]
+          | select(.key | startswith("/api/runtime/"))
+          | (.key | ltrimstr("/api/runtime/") | split("/")) as $seg
+          | select($seg | length == 4 and .[1] == $unit and .[2] == "latest" and .[3] != "batch")
+          | select(($seg[3] + (.value | tostring)) | contains($model))
+          | .key' \
+      | head -n1)"
+    if [ -n "$named_path" ]; then
+      url_path="$named_path"
+    else
+      echo "   ↳ ⚠ unit '$unit_name' exposes several models and none matches '${unit_name%.*}'; using $url_path" >&2
+    fi
+  fi
 
   if [ -z "$url_path" ]; then
-    echo "   ↳ ⚠ could not resolve runtime URL for '$unit_name'; $var_name not set" >&2
+    echo "   ↳ ⚠ could not resolve runtime URL for '$unit_name' from $explorer_url; $var_name not set" >&2
+    echo "   ↳   response was: $(printf '%s' "$api_docs" | head -c 300)" >&2
     return 0
   fi
   export "$var_name=$dc_base$url_path"
@@ -61,6 +97,7 @@ models_upload_main() {
   local EMOJI_OK="✅" EMOJI_FAIL="❌"
   local UNITS_JSON TMP_DIR failures=0 found=0
   local model_file unit_name model_name zip_path body http_code unit_id version_id enable_code
+  local import_rel unit_files
 
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   REPO_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -77,7 +114,7 @@ models_upload_main() {
   local DC_BASE_URL="${DC_BASE_URL:-http://localhost:8081}"
   UPLOAD_URL="$DC_BASE_URL/api/management/upload"
   UNITS_URL="$DC_BASE_URL/api/management/units"
-  EXPLORER_URL="$DC_BASE_URL/api/explorer"
+  EXPLORER_URL="$DC_BASE_URL/v3/api-docs"
 
   command -v zip  >/dev/null 2>&1 || { echo "$EMOJI_FAIL zip is required"  >&2; return 1; }
   command -v curl >/dev/null 2>&1 || { echo "$EMOJI_FAIL curl is required" >&2; return 1; }
@@ -107,7 +144,15 @@ models_upload_main() {
     fi
 
     zip_path="$TMP_DIR/$unit_name.zip"
-    if ! zip -qj "$zip_path" "$model_file"; then
+    unit_files=("$model_file")
+    for import_rel in ${MODEL_IMPORTS[$unit_name]:-}; do
+      if [ ! -f "$MODELS_DIR/$import_rel" ]; then
+        echo "$EMOJI_FAIL $unit_name (imported model not found: $import_rel)"
+        failures=$((failures + 1)); continue 2
+      fi
+      unit_files+=("$MODELS_DIR/$import_rel")
+    done
+    if ! zip -qj "$zip_path" "${unit_files[@]}"; then
       echo "$EMOJI_FAIL $unit_name (zip failed)"
       failures=$((failures + 1)); continue
     fi

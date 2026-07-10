@@ -32,7 +32,7 @@ import jakarta.transaction.Transactional;
 @ApplicationScoped
 public class QuoteService {
 
-    private static final String VEHICLE_VALUE_OUTPUT = "Estimated Vehicle Value";
+    private static final String VEHICLE_VALUE_OUTPUT = "carEstimatedValue";
     private static final String RISK_RATE_OUTPUT = "Risk Rate";
 
     private final EntityManager em;
@@ -77,7 +77,7 @@ public class QuoteService {
     }
 
     /**
-     * Evaluates only the {@code Estimated Vehicle Value} decision of the
+     * Evaluates only the {@code carEstimatedValue} decision of the
      * car-quote DMN model. That decision depends solely on make, model and
      * year, so the risk inputs are omitted.
      *
@@ -100,7 +100,7 @@ public class QuoteService {
 
     /**
      * Calls the Decision Control runtime to evaluate the car-quote DMN model
-     * once, returning both the {@code Estimated Vehicle Value} and the
+     * once, returning both the {@code carEstimatedValue} and the
      * {@code Risk Rate} it computes. The risk rate is driven by the model's
      * Risk Index, to which mileage, driver age, accidents and tickets each
      * contribute independently.
