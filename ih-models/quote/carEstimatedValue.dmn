@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20240513/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" expressionLanguage="https://www.omg.org/spec/DMN/20240513/FEEL/" namespace="https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D" id="_5B0D8E2A-6C43-4F17-9B58-1E2D3C4B5A69" name="carEstimatedValue">
+  <decision name="estimatedValue" id="_VVD00001-0000-0000-0000-000000000001">
+    <variable name="estimatedValue" id="_VVD00001-0000-0000-0000-000000000002" typeRef="number" />
+    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A1">
+      <requiredInput href="#_VVI00001-0000-0000-0000-000000000001" />
+    </informationRequirement>
+    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A2">
+      <requiredInput href="#_VVI00002-0000-0000-0000-000000000001" />
+    </informationRequirement>
+    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A3">
+      <requiredInput href="#_VVI00003-0000-0000-0000-000000000001" />
+    </informationRequirement>
+    <knowledgeRequirement id="_VVD00001-0000-0000-0000-0000000000B1">
+      <requiredKnowledge href="#_VVBKM001-0000-0000-0000-000000000001" />
+    </knowledgeRequirement>
+    <literalExpression id="_VVD00001-0000-0000-0000-000000000010" typeRef="number">
+      <text>carEstimatedValue(Make, Model, Year)</text>
+    </literalExpression>
+  </decision>
   <businessKnowledgeModel name="carEstimatedValue" id="_VVBKM001-0000-0000-0000-000000000001">
     <variable name="carEstimatedValue" id="_VVBKM001-0000-0000-0000-000000000002" />
     <encapsulatedLogic id="_VVBKM001-0000-0000-0000-000000000003" kind="FEEL">
@@ -486,24 +504,6 @@
       </decisionTable>
     </encapsulatedLogic>
   </businessKnowledgeModel>
-  <decision name="estimatedValue" id="_VVD00001-0000-0000-0000-000000000001">
-    <variable name="estimatedValue" id="_VVD00001-0000-0000-0000-000000000002" typeRef="number" />
-    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A1">
-      <requiredInput href="#_VVI00001-0000-0000-0000-000000000001" />
-    </informationRequirement>
-    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A2">
-      <requiredInput href="#_VVI00002-0000-0000-0000-000000000001" />
-    </informationRequirement>
-    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A3">
-      <requiredInput href="#_VVI00003-0000-0000-0000-000000000001" />
-    </informationRequirement>
-    <knowledgeRequirement id="_VVD00001-0000-0000-0000-0000000000B1">
-      <requiredKnowledge href="#_VVBKM001-0000-0000-0000-000000000001" />
-    </knowledgeRequirement>
-    <literalExpression id="_VVD00001-0000-0000-0000-000000000010" typeRef="number">
-      <text>carEstimatedValue(Make, Model, Year)</text>
-    </literalExpression>
-  </decision>
   <inputData name="Make" id="_VVI00001-0000-0000-0000-000000000001">
     <variable name="Make" id="_VVI00001-0000-0000-0000-000000000002" typeRef="string" />
   </inputData>
