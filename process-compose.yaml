@@ -5,12 +5,17 @@ processes:
     working_dir: .
 
   # PostgreSQL database, run as a throwaway container for local dev.
+  # ih-data/ is mounted as /docker-entrypoint-initdb.d: with no volume, initdb
+  # runs on every startup and replays ih-data/*.sql, seeding the database from
+  # the last ./scripts/db-dump.sh snapshot. Runs from the repo root, so $(pwd)
+  # resolves to it (docker -v needs an absolute path).
   1-database:
     command: >-
       docker run --rm --name insurance-hub-db
       -e POSTGRES_USER=${QUARKUS_DATASOURCE_USERNAME:-quarkus}
       -e POSTGRES_PASSWORD=${QUARKUS_DATASOURCE_PASSWORD:-quarkus}
       -e POSTGRES_DB=${POSTGRES_DB:-insurancehub}
+      -v "$(pwd)/ih-data:/docker-entrypoint-initdb.d:ro"
       -p 5432:5432
       postgres:16-alpine
     shutdown:

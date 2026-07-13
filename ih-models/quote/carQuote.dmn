@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20240513/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" expressionLanguage="https://www.omg.org/spec/DMN/20240513/FEEL/" namespace="https://kie.org/dmn/_03709CE1-A299-4537-B2BA-39E6E442C1B8" xmlns:vv="https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D" id="_DC8DF03C-7EEA-4880-83D7-0CE57999C2A9" name="carQuote">
-  <import id="_IMP00001-0000-0000-0000-000000000001" name="vehicleValues" importType="https://www.omg.org/spec/DMN/20230324/MODEL/" namespace="https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D" locationURI="carEstimatedValue.dmn" />
+  <import id="_IMP00001-0000-0000-0000-000000000001" name="vehicleValues" importType="https://www.omg.org/spec/DMN/20230324/MODEL/" namespace="https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D" locationURI="carEstimatedValue.dmn" xmlns:drools="http://www.drools.org/kie/dmn/1.1" drools:modelName="carEstimatedValue" />
   <decision name="carEstimatedValue" id="_0AFAFF2E-34CB-4235-8145-2A6ECAD61F34">
     <variable name="carEstimatedValue" id="_A835F10F-7DE5-44A5-A189-ADD7A7268211" typeRef="number" />
     <informationRequirement id="_8F19E6EE-CA1A-4015-B219-00BB52FFE10D">

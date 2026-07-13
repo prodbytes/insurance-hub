@@ -16,9 +16,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import ih.Parameters;
 import ih.domain.QuoteRequest;
 import ih.domain.QuoteResponse;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
@@ -39,9 +41,8 @@ public class QuoteService {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    // Decision Control runtime endpoint for the car-quote model.
-    @ConfigProperty(name = "ih.quote.vehicle-price.url")
-    String vehiclePriceUrl;
+    @Inject
+    Parameters params;
 
     public QuoteService(EntityManager em, ObjectMapper objectMapper) {
         this.em = em;
@@ -128,6 +129,10 @@ public class QuoteService {
      */
     private JsonNode evaluate(HashMap<String, Object> input) {
         try {
+            var vehiclePriceUrl = params.quote().vehiclePriceUrl()
+                    .filter(u -> !u.isBlank())
+                    .orElseThrow(() -> new QuoteCalculationException(
+                            "Vehicle price endpoint is not configured (ih.quote.vehicle-price.url)"));
             var httpRequest = HttpRequest.newBuilder(URI.create(vehiclePriceUrl))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")

@@ -16,37 +16,39 @@
 # DC state lives in the throwaway database container, so versions never
 # outlive the stack.
 #
-# For units listed in MODEL_URL_VARS, the model's runtime execution URL is
-# resolved from Decision Control and exported under the named variable, which
-# application.properties references (ih.quote.vehicle-price.url=${IH_QUOTE_VEHICLE_PRICE_URL:}),
+# For every uploaded unit, the model's runtime execution URL is resolved from
+# Decision Control and exported under a variable derived from the model file
+# name: IH_<MODEL_NAME_UPPER_SNAKE>_URL (e.g. carQuote.dmn -> IH_CAR_QUOTE_URL).
+# application.properties references these (ih.quote.vehicle-price.url=${IH_CAR_QUOTE_URL:}),
 # so the generated model id never has to be hard-coded there. The IH_ prefix
 # namespaces the app's own variables.
 #
 # Meant to be sourced (e.g. from dev-start.sh) so the exports reach the app, but
 # also runnable standalone.
 
-# Unit name (= model file name) -> environment variable that should receive its
-# runtime URL.
-declare -A MODEL_URL_VARS=(
-  ["carQuote.dmn"]="IH_QUOTE_VEHICLE_PRICE_URL"
-)
+# Reduce an HTTP error response body to a single displayable message: the JSON
+# .message/.error field when present, the raw body otherwise, or a placeholder
+# when the server sent nothing back.
+error_detail() {
+  local body="$1" msg
+  msg="$(printf '%s' "$body" | jq -r '.message // .error // empty' 2>/dev/null)"
+  printf '%s' "${msg:-${body:-<empty response body>}}"
+}
 
-# Unit name -> space-separated list of model files (relative to MODELS_DIR)
-# the unit imports. DMN imports must be packaged in the same unit zip as the
-# importing model or the runtime cannot resolve them. An imported model with
-# the regular .dmn extension is also picked up by the main loop and uploaded
-# as a unit of its own; use the .dmns extension for import-only models that
-# should not be deployed standalone.
-declare -A MODEL_IMPORTS=(
-  ["carQuote.dmn"]="quote/carEstimatedValue.dmn"
-)
+# IH_<UPPER_SNAKE>_URL variable name for a model base name, e.g.
+# carQuote -> IH_CAR_QUOTE_URL, carEstimatedValue -> IH_CAR_ESTIMATED_VALUE_URL.
+model_url_var_name() {
+  printf 'IH_%s_URL' "$(printf '%s' "$1" \
+    | sed -E 's/([a-z0-9])([A-Z])/\1_\2/g; s/[^A-Za-z0-9]+/_/g' \
+    | tr '[:lower:]' '[:upper:]')"
+}
 
 # Resolves a unit's model runtime URL from Decision Control and exports it under
-# the variable bound in MODEL_URL_VARS (a no-op for units without a binding).
+# the derived IH_<MODEL_NAME>_URL variable. Prints the export on success and a
+# clear failure otherwise (non-zero return so the caller counts it).
 export_model_url() {
   local unit_name="$1" dc_base="$2" explorer_url="$3" var_name url_path
-  var_name="${MODEL_URL_VARS[$unit_name]:-}"
-  [ -n "$var_name" ] || return 0
+  var_name="$(model_url_var_name "${unit_name%.*}")"
 
   # The bare execution path is /api/runtime/<tenant>/<unit>/latest/<modelId> —
   # pick it (excluding the sibling .../latest/batch and .../<modelId>/{batch,schema}
@@ -60,7 +62,7 @@ export_model_url() {
             | length == 4 and .[1] == $unit and .[2] == "latest" and .[3] != "batch")')"
   url_path="$(printf '%s\n' "$candidates" | head -n1)"
 
-  # A unit zip can bundle imported models (see MODEL_IMPORTS), which gives the
+  # A unit zip can bundle several models, which gives the
   # unit one runtime path per model. Prefer the path whose model id segment or
   # operation entry mentions the unit's own model name.
   if [ "$(printf '%s\n' "$candidates" | grep -c .)" -gt 1 ]; then
@@ -81,12 +83,12 @@ export_model_url() {
   fi
 
   if [ -z "$url_path" ]; then
-    echo "   ↳ ⚠ could not resolve runtime URL for '$unit_name' from $explorer_url; $var_name not set" >&2
+    echo "   ↳ ❌ could not resolve runtime URL for '$unit_name' from $explorer_url; $var_name NOT exported" >&2
     echo "   ↳   response was: $(printf '%s' "$api_docs" | head -c 300)" >&2
-    return 0
+    return 1
   fi
   export "$var_name=$dc_base$url_path"
-  echo "   ↳ exported $var_name=$dc_base$url_path"
+  echo "   ↳ ✅ exported $var_name=$dc_base$url_path"
 }
 
 models_upload_main() {
@@ -96,8 +98,7 @@ models_upload_main() {
   local SCRIPT_DIR REPO_ROOT UPLOAD_URL UNITS_URL EXPLORER_URL
   local EMOJI_OK="✅" EMOJI_FAIL="❌"
   local UNITS_JSON TMP_DIR failures=0 found=0
-  local model_file unit_name model_name zip_path body http_code unit_id version_id enable_code
-  local import_rel unit_files
+  local model_file unit_name model_name zip_path body http_code unit_id version_id enable_code enable_body
 
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   REPO_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -143,16 +144,10 @@ models_upload_main() {
       echo "   ↳ renamed auto-generated model name in ${model_file#"$MODELS_DIR"/} to '$model_name'"
     fi
 
+    # Each .dmn file is uploaded individually. The upload endpoint only
+    # accepts zip bodies, so the single file is wrapped in its own zip.
     zip_path="$TMP_DIR/$unit_name.zip"
-    unit_files=("$model_file")
-    for import_rel in ${MODEL_IMPORTS[$unit_name]:-}; do
-      if [ ! -f "$MODELS_DIR/$import_rel" ]; then
-        echo "$EMOJI_FAIL $unit_name (imported model not found: $import_rel)"
-        failures=$((failures + 1)); continue 2
-      fi
-      unit_files+=("$MODELS_DIR/$import_rel")
-    done
-    if ! zip -qj "$zip_path" "${unit_files[@]}"; then
+    if ! zip -qj "$zip_path" "$model_file"; then
       echo "$EMOJI_FAIL $unit_name (zip failed)"
       failures=$((failures + 1)); continue
     fi
@@ -162,7 +157,9 @@ models_upload_main() {
     http_code="${body##*$'\n'}"
     body="${body%$'\n'*}"
     if [ "$http_code" != "200" ]; then
-      echo "$EMOJI_FAIL $unit_name upload failed (HTTP $http_code) $body"
+      echo "$EMOJI_FAIL $unit_name upload failed (HTTP $http_code): $(error_detail "$body")"
+      echo "   ↳ zip contained: $(zipinfo -1 "$zip_path" 2>/dev/null | tr '\n' ' ')"
+      echo "   ↳ for the server-side stack trace check the decision-control process logs"
       failures=$((failures + 1)); continue
     fi
 
@@ -174,17 +171,21 @@ models_upload_main() {
     fi
 
     # Enabling the new version is what moves the unit's /latest alias to it.
-    enable_code="$(curl -s -m 30 -o /dev/null -w '%{http_code}' \
+    enable_body="$(curl -s -m 30 -o - -w $'\n%{http_code}' \
       -X PATCH "$DC_BASE_URL/api/management/units/$unit_id/versions/$version_id/enable")"
+    enable_code="${enable_body##*$'\n'}"
+    enable_body="${enable_body%$'\n'*}"
     if [ "$enable_code" = "200" ]; then
       echo "$EMOJI_OK $unit_name uploaded and enabled (unit $unit_id, version $version_id)"
     else
-      echo "$EMOJI_FAIL $unit_name uploaded (unit $unit_id, version $version_id) but enable failed (HTTP $enable_code)"
+      echo "$EMOJI_FAIL $unit_name uploaded (unit $unit_id, version $version_id) but enable failed (HTTP $enable_code): $(error_detail "$enable_body")"
       failures=$((failures + 1)); continue
     fi
 
     # Expose the unit's version-independent /latest runtime URL to the app.
-    export_model_url "$unit_name" "$DC_BASE_URL" "$EXPLORER_URL"
+    if ! export_model_url "$unit_name" "$DC_BASE_URL" "$EXPLORER_URL"; then
+      failures=$((failures + 1))
+    fi
   done < <(find "$MODELS_DIR" -type f -name '*.dmn' -print0 | sort -z)
 
   rm -rf "$TMP_DIR"

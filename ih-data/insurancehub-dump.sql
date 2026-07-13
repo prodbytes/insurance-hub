@@ -1,0 +1,966 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict iuNNf0sJ6ntPKNu2inSYB9ghE526pu5FSrGHgj5BaJD8JF2r2moGcyHfjJdMPWI
+
+-- Dumped from database version 16.14
+-- Dumped by pg_dump version 16.14
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: car_maker; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.car_maker (
+    id bigint NOT NULL,
+    name character varying(64) NOT NULL
+);
+
+
+--
+-- Name: car_maker_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.car_maker ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.car_maker_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: car_model; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.car_model (
+    id bigint NOT NULL,
+    car_maker_id bigint NOT NULL,
+    name character varying(64) NOT NULL
+);
+
+
+--
+-- Name: car_model_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.car_model ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.car_model_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: execution_logs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.execution_logs (
+    id uuid NOT NULL,
+    business_key character varying(1000),
+    description text,
+    input json NOT NULL,
+    model_hash character varying(255),
+    model_id bigint NOT NULL,
+    model_name_ref character varying(255) NOT NULL,
+    oidc_identity character varying(255),
+    output json NOT NULL,
+    status character varying(255),
+    tenant_id character varying(255) NOT NULL,
+    "timestamp" timestamp(6) with time zone NOT NULL,
+    unit_id bigint NOT NULL,
+    unit_name character varying(255) NOT NULL,
+    version_id bigint NOT NULL,
+    version_number integer NOT NULL,
+    CONSTRAINT execution_logs_status_check CHECK (((status)::text = ANY ((ARRAY['ERROR'::character varying, 'SUCCESS'::character varying, 'MODEL_NOT_EXISTS'::character varying, 'FORBIDDEN'::character varying])::text[])))
+);
+
+
+--
+-- Name: flyway_schema_history; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.flyway_schema_history (
+    installed_rank integer NOT NULL,
+    version character varying(50),
+    description character varying(200) NOT NULL,
+    type character varying(20) NOT NULL,
+    script character varying(1000) NOT NULL,
+    checksum integer,
+    installed_by character varying(100) NOT NULL,
+    installed_on timestamp without time zone DEFAULT now() NOT NULL,
+    execution_time integer NOT NULL,
+    success boolean NOT NULL
+);
+
+
+--
+-- Name: models; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.models (
+    model_hash character varying(255) NOT NULL,
+    description text,
+    json_schema text,
+    model_content text NOT NULL,
+    model_name character varying(255) NOT NULL,
+    namespace character varying(255) NOT NULL,
+    tenant_id character varying(255) NOT NULL
+);
+
+
+--
+-- Name: models_aud; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.models_aud (
+    model_hash character varying(255) NOT NULL,
+    rev bigint NOT NULL,
+    revtype smallint,
+    description text,
+    json_schema text,
+    model_content text,
+    model_name character varying(255),
+    namespace character varying(255),
+    tenant_id character varying(255)
+);
+
+
+--
+-- Name: models_refs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.models_refs (
+    id bigint NOT NULL,
+    description text,
+    status character varying(255) NOT NULL,
+    tenant_id character varying(255) NOT NULL,
+    model_hash character varying(255) NOT NULL,
+    unit_id bigint NOT NULL,
+    version_id bigint NOT NULL,
+    CONSTRAINT models_refs_status_check CHECK (((status)::text = ANY ((ARRAY['ENABLED'::character varying, 'DISABLED'::character varying, 'JUST_CREATED'::character varying])::text[])))
+);
+
+
+--
+-- Name: models_refs_aud; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.models_refs_aud (
+    id bigint NOT NULL,
+    rev bigint NOT NULL,
+    revtype smallint,
+    description text,
+    status character varying(255),
+    tenant_id character varying(255),
+    model_hash character varying(255),
+    unit_id bigint,
+    version_id bigint,
+    CONSTRAINT models_refs_aud_status_check CHECK (((status)::text = ANY ((ARRAY['ENABLED'::character varying, 'DISABLED'::character varying, 'JUST_CREATED'::character varying])::text[])))
+);
+
+
+--
+-- Name: models_refs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.models_refs ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.models_refs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: quote_request; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.quote_request (
+    id bigint NOT NULL,
+    first_name character varying(255),
+    last_name character varying(255),
+    date_of_birth date,
+    email character varying(255),
+    phone character varying(255),
+    street_address character varying(255),
+    city character varying(255),
+    state character varying(255),
+    zip_code character varying(255),
+    marital_status character varying(255),
+    age_when_first_licensed integer,
+    vehicle_year integer,
+    make character varying(255),
+    model character varying(255),
+    vin character varying(255),
+    primary_use character varying(255),
+    annual_mileage integer,
+    ownership character varying(255),
+    overnight_parking character varying(255),
+    coverage_level character varying(255),
+    deductible character varying(255),
+    desired_start_date date,
+    prior_insurance boolean DEFAULT false NOT NULL,
+    accidents_last_5_years boolean DEFAULT false NOT NULL,
+    violations_last_3_years boolean DEFAULT false NOT NULL
+);
+
+
+--
+-- Name: quote_request_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.quote_request ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.quote_request_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: quote_response; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.quote_response (
+    id bigint NOT NULL,
+    quote_request_id bigint NOT NULL,
+    estimated_vehicle_price numeric(12,2),
+    risk_rate numeric(10,4)
+);
+
+
+--
+-- Name: quote_response_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.quote_response ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.quote_response_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: refresh_log; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.refresh_log (
+    id bigint NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    origin uuid NOT NULL,
+    tenant_id character varying(255) NOT NULL,
+    unit_id bigint NOT NULL
+);
+
+
+--
+-- Name: refresh_log_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.refresh_log ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.refresh_log_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: revisions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.revisions (
+    id bigint NOT NULL,
+    tenant_id character varying(255),
+    "timestamp" bigint,
+    username character varying(255)
+);
+
+
+--
+-- Name: revisions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.revisions ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.revisions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: units; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.units (
+    id bigint NOT NULL,
+    date_created timestamp(6) with time zone NOT NULL,
+    description text,
+    name character varying(255) NOT NULL,
+    status character varying(255) NOT NULL,
+    tenant_id character varying(255) NOT NULL,
+    CONSTRAINT units_status_check CHECK (((status)::text = ANY ((ARRAY['ENABLED'::character varying, 'DISABLED'::character varying, 'JUST_CREATED'::character varying])::text[])))
+);
+
+
+--
+-- Name: units_aud; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.units_aud (
+    id bigint NOT NULL,
+    rev bigint NOT NULL,
+    revtype smallint,
+    date_created timestamp(6) with time zone,
+    description text,
+    name character varying(255),
+    status character varying(255),
+    tenant_id character varying(255),
+    CONSTRAINT units_aud_status_check CHECK (((status)::text = ANY ((ARRAY['ENABLED'::character varying, 'DISABLED'::character varying, 'JUST_CREATED'::character varying])::text[])))
+);
+
+
+--
+-- Name: units_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.units ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.units_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: versions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.versions (
+    id bigint NOT NULL,
+    commit_hash text,
+    date_created timestamp(6) with time zone NOT NULL,
+    description text,
+    is_latest_enabled boolean NOT NULL,
+    ref_name text,
+    repository_url text,
+    status character varying(255) NOT NULL,
+    tenant_id character varying(255) NOT NULL,
+    version_number integer NOT NULL,
+    unit_id bigint NOT NULL,
+    CONSTRAINT versions_status_check CHECK (((status)::text = ANY ((ARRAY['ENABLED'::character varying, 'DISABLED'::character varying, 'JUST_CREATED'::character varying])::text[])))
+);
+
+
+--
+-- Name: versions_aud; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.versions_aud (
+    id bigint NOT NULL,
+    rev bigint NOT NULL,
+    revtype smallint,
+    commit_hash text,
+    date_created timestamp(6) with time zone,
+    description text,
+    is_latest_enabled boolean,
+    ref_name text,
+    repository_url text,
+    status character varying(255),
+    tenant_id character varying(255),
+    version_number integer,
+    unit_id bigint,
+    CONSTRAINT versions_aud_status_check CHECK (((status)::text = ANY ((ARRAY['ENABLED'::character varying, 'DISABLED'::character varying, 'JUST_CREATED'::character varying])::text[])))
+);
+
+
+--
+-- Name: versions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.versions ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.versions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Data for Name: car_maker; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.car_maker (id, name) FROM stdin;
+1	toyota
+2	honda
+3	ford
+\.
+
+
+--
+-- Data for Name: car_model; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.car_model (id, car_maker_id, name) FROM stdin;
+1	1	rav4
+2	1	corolla
+3	1	camry
+4	2	cr-v
+5	2	accord
+6	2	civic
+7	3	explorer
+8	3	escape
+9	3	f-150
+\.
+
+
+--
+-- Data for Name: execution_logs; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.execution_logs (id, business_key, description, input, model_hash, model_id, model_name_ref, oidc_identity, output, status, tenant_id, "timestamp", unit_id, unit_name, version_id, version_number) FROM stdin;
+\.
+
+
+--
+-- Data for Name: flyway_schema_history; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.flyway_schema_history (installed_rank, version, description, type, script, checksum, installed_by, installed_on, execution_time, success) FROM stdin;
+1	1	<< Flyway Baseline >>	BASELINE	<< Flyway Baseline >>	\N	dbuser	2026-07-13 17:04:39.391458	0	t
+2	20260623084134	Add car makers	SQL	db/migration/V20260623084134__Add_car_makers.sql	-784398157	dbuser	2026-07-13 17:04:39.521153	30	t
+3	20260623091557	Add quote request	SQL	db/migration/V20260623091557__Add_quote_request.sql	-56676453	dbuser	2026-07-13 17:04:39.587083	24	t
+4	20260623092921	Add quote response	SQL	db/migration/V20260623092921__Add_quote_response.sql	-1528817411	dbuser	2026-07-13 17:04:39.63246	20	t
+5	20260713100000	Add car models	SQL	db/migration/V20260713100000__Add_car_models.sql	1219777056	dbuser	2026-07-13 17:04:39.668983	26	t
+\.
+
+
+--
+-- Data for Name: models; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.models (model_hash, description, json_schema, model_content, model_name, namespace, tenant_id) FROM stdin;
+ad72dce881f0901a84d46fa534d4e6fda09ab2f9f6c5aeafb49a7f97b375c379	\N	{"definitions":{"InputSet":{"type":"object","properties":{"Make":{"type":"string","x-dmn-type":"FEEL:string"},"Model":{"type":"string","x-dmn-type":"FEEL:string"},"Year":{"type":"number","x-dmn-type":"FEEL:number"}},"required":["Make","Model","Year"],"x-dmn-type":"DMNType{ https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D : InputSet }","x-dmn-descriptions":{"Year":null,"Model":null,"Make":null}},"OutputSet":{"type":"object","properties":{"estimatedValue":{"type":"number","x-dmn-type":"FEEL:number"},"Make":{"type":"string","x-dmn-type":"FEEL:string"},"Model":{"type":"string","x-dmn-type":"FEEL:string"},"Year":{"type":"number","x-dmn-type":"FEEL:number"}},"x-dmn-type":"DMNType{ https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D : OutputSet }","x-dmn-descriptions":{"estimatedValue":null,"Year":null,"Model":null,"Make":null}}}}	<?xml version="1.0" encoding="UTF-8" ?>\n<definitions xmlns="https://www.omg.org/spec/DMN/20240513/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" expressionLanguage="https://www.omg.org/spec/DMN/20240513/FEEL/" namespace="https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D" id="_5B0D8E2A-6C43-4F17-9B58-1E2D3C4B5A69" name="carEstimatedValue">\n  <decision name="estimatedValue" id="_VVD00001-0000-0000-0000-000000000001">\n    <variable name="estimatedValue" id="_VVD00001-0000-0000-0000-000000000002" typeRef="number" />\n    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A1">\n      <requiredInput href="#_VVI00001-0000-0000-0000-000000000001" />\n    </informationRequirement>\n    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A2">\n      <requiredInput href="#_VVI00002-0000-0000-0000-000000000001" />\n    </informationRequirement>\n    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A3">\n      <requiredInput href="#_VVI00003-0000-0000-0000-000000000001" />\n    </informationRequirement>\n    <knowledgeRequirement id="_VVD00001-0000-0000-0000-0000000000B1">\n      <requiredKnowledge href="#_VVBKM001-0000-0000-0000-000000000001" />\n    </knowledgeRequirement>\n    <literalExpression id="_VVD00001-0000-0000-0000-000000000010" typeRef="number">\n      <text>carEstimatedValue(Make, Model, Year)</text>\n    </literalExpression>\n  </decision>\n  <businessKnowledgeModel name="carEstimatedValue" id="_VVBKM001-0000-0000-0000-000000000001">\n    <variable name="carEstimatedValue" id="_VVBKM001-0000-0000-0000-000000000002" />\n    <encapsulatedLogic id="_VVBKM001-0000-0000-0000-000000000003" kind="FEEL">\n      <formalParameter id="_VVBKM001-0000-0000-0000-000000000004" name="Make" typeRef="string" />\n      <formalParameter id="_VVBKM001-0000-0000-0000-000000000005" name="Model" typeRef="string" />\n      <formalParameter id="_VVBKM001-0000-0000-0000-000000000006" name="Year" typeRef="number" />\n      <decisionTable id="_3D4133D1-5169-4C0F-A2D5-0EEA1BDA951B" typeRef="number" hitPolicy="UNIQUE" label="carEstimatedValueTable">\n        <input id="_6D7E43A1-C8FD-4857-8857-45F5933BCA38">\n          <inputExpression id="_9D27E3B9-76F2-4E55-8FDC-C326EE154F20" typeRef="string">\n            <text>Make</text>\n          </inputExpression>\n        </input>\n        <input id="_C7A38FEA-DDFF-4F82-8624-62094D7C9B7F">\n          <inputExpression id="_B9473A69-1EB6-4A0A-BCDB-53873FCEE15D" typeRef="string">\n            <text>Model</text>\n          </inputExpression>\n        </input>\n        <input id="_27E202E5-6650-48C8-96E2-BF01AA9D4654">\n          <inputExpression id="_49EFA952-2854-4BD7-903B-DB93D9D6ED4F" typeRef="number">\n            <text>Year</text>\n          </inputExpression>\n        </input>\n        <output id="_2ECB7C13-698C-491D-81AE-CC6FC0343189" />\n        <annotation name="Annotations" />\n        <rule id="_143D1759-CA9F-4754-8C44-1F9753D57911">\n          <inputEntry id="_3A98B1BF-94A7-415E-9C13-03A6D6643BF9">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_2A2E5292-F400-4AF2-B761-F84755C42EE4">\n            <text>&quot;camry&quot;</text>\n          </inputEntry>\n          <inputEntry id="_07EB9805-443E-4F7D-B644-92DB88CB862A">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_6073E28E-FD6C-4D1B-9E59-F1440F5876C1">\n            <text>30000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text>// Your annotations here</text>\n          </annotationEntry>\n        </rule>\n        <rule id="_819CFBD9-F853-47A6-AA93-42AF58E20DE9">\n          <inputEntry id="_E69CF127-15AD-47FF-863B-1CF9763E0DF0">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_9FD0A0AB-CA54-491A-B458-AF5BDD133FEE">\n            <text>&quot;camry&quot;</text>\n          </inputEntry>\n          <inputEntry id="_C0744888-2B3E-4A2C-A68E-3705344B206A">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_128E0225-97B3-4C4C-AD36-223EC8F65B88">\n            <text>27000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_6DE2B067-7F3C-433C-BD86-5E0CDD5B005A">\n          <inputEntry id="_336C13C4-2D5B-4664-A6E1-BFE05871A046">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_F302850E-5875-4531-840B-B8E572EBD52B">\n            <text>&quot;camry&quot;</text>\n          </inputEntry>\n          <inputEntry id="_F6F08594-FEF4-4F51-A48B-8F41839B4FED">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_B14B306D-2BF8-479A-ACFE-6042085C0CF0">\n            <text>24000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_4856581A-9BF4-473A-A097-8187780A1AF6">\n          <inputEntry id="_3AA0D61B-9AC8-461C-926A-F9A3D7B14BF4">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_888621D8-3955-4F59-8CAC-198221E6FD77">\n            <text>&quot;corolla&quot;</text>\n          </inputEntry>\n          <inputEntry id="_A44DD352-E7EA-4796-9B50-5500549AB5DD">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_E27921E3-FD57-414B-8A17-93DD33A53F59">\n            <text>25000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_131AB885-CF37-493B-90EE-FD7E4203E08E">\n          <inputEntry id="_093D6879-6882-4F9A-A795-7393006F4AB5">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_AE0CDB3C-4320-4B0D-A27E-278DD5C0C526">\n            <text>&quot;corolla&quot;</text>\n          </inputEntry>\n          <inputEntry id="_67FE58D7-B352-4517-85F2-BE049D7C9758">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_B0348821-6B27-42B7-825B-9D0F4B90DD22">\n            <text>22000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_C7DE12B7-42EA-4B0B-891A-68EB02E5FEE6">\n          <inputEntry id="_750C017B-5963-433A-A321-D46E4CCB61EA">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_0D5628F8-17FD-4D3B-AE4F-DF585420F30A">\n            <text>&quot;corolla&quot;</text>\n          </inputEntry>\n          <inputEntry id="_ED38DDFA-2387-4590-9A87-4FFB521DC980">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_C70C7C98-DD29-43AF-9715-7CEEF193A583">\n            <text>20000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_87F90EE6-899E-4313-845F-79FB38EF2F2B">\n          <inputEntry id="_DE615161-8302-4550-8DD0-D4AF736A006D">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_C474E651-CEE8-4299-8ECD-AECAD04CC6C7">\n            <text>&quot;rav4&quot;</text>\n          </inputEntry>\n          <inputEntry id="_4B7E6F9A-AF65-4BA0-9F61-3597DD2C8307">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_6CA6340E-8641-46EF-B6EF-5515FA766C29">\n            <text>34000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_BE69C064-EAC8-4185-AE33-7DBB1593EA82">\n          <inputEntry id="_BA7D5BD9-6B5C-473E-87F7-51EDC13D2B08">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_699E38EC-0D21-48C3-A6F8-B6E13F472261">\n            <text>&quot;rav4&quot;</text>\n          </inputEntry>\n          <inputEntry id="_C7AAF80E-448F-4A58-B02D-57F91E8BFAB9">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_654524CC-163F-416F-A10D-F9E9E83626C3">\n            <text>31000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_84D143FD-FD56-4E26-AB9F-990F8F2FE856">\n          <inputEntry id="_DC0F1CF7-8DBE-4F6E-BCF6-A6123E396DAA">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_AC5ED03E-5A4F-4D7F-ACE5-4C4E6755B307">\n            <text>&quot;rav4&quot;</text>\n          </inputEntry>\n          <inputEntry id="_25E73363-C7B7-4845-9C89-2492C516E615">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_CC3CD58E-1D78-47FB-9D13-8C7328FC62A8">\n            <text>28000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_EC105BD6-FE19-4798-B205-E97696B491C8">\n          <inputEntry id="_85ACC8D2-E4C0-4C14-BC2F-C791BBCEE1F1">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_E135A592-8328-456F-910A-86564DD345DA">\n            <text>&quot;civic&quot;</text>\n          </inputEntry>\n          <inputEntry id="_865E4164-690D-4158-9098-78D79AF546CB">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_DF1322F6-1263-44DC-90EF-692989D5AC98">\n            <text>28000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_A6C9D591-A77D-411C-B91A-C822AEC19E4D">\n          <inputEntry id="_35CF75C7-2943-4264-9DDD-7BE79E51BB60">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_418335CB-F35A-4DF3-BE73-BF306CCBAB43">\n            <text>&quot;civic&quot;</text>\n          </inputEntry>\n          <inputEntry id="_AA82F3AF-2461-492D-BD54-45EB8AA5CA6E">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_88C8D85D-090D-4A21-B838-72E329A61B30">\n            <text>25000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_3386D4DD-16D1-458E-AB20-27B4BB278487">\n          <inputEntry id="_42DF7AA5-F8B4-4153-8C1C-EA8003FEB372">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_CAE23ECF-AA10-47C6-8527-759622EE80A7">\n            <text>&quot;civic&quot;</text>\n          </inputEntry>\n          <inputEntry id="_6FD4C392-E677-4057-922F-59C22D99C0E7">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_A1941E95-3616-4EF9-9280-93271D291F6F">\n            <text>22000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_7CE6D8EA-1914-44A4-AE47-014AC21EF4B5">\n          <inputEntry id="_A7B84952-E84A-4034-8A34-26E14092FC77">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_629673FA-8148-49D1-9491-3FDE51620B5F">\n            <text>&quot;accord&quot;</text>\n          </inputEntry>\n          <inputEntry id="_6E113CB8-0F3A-45AE-AC66-3E8FEC64E21A">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_DED16387-30D9-4AD9-B3F1-C58C058A7C06">\n            <text>32000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_88582E2D-AEDA-415A-B9B5-AA89511EAF99">\n          <inputEntry id="_1227A4B5-95E1-4466-AD88-42228E33A691">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_7AE77CB2-04FB-4713-B1D4-622410201F17">\n            <text>&quot;accord&quot;</text>\n          </inputEntry>\n          <inputEntry id="_E1E723BA-D178-4344-85D0-A0F78FF39DE7">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_5A59D2E9-237B-4AB0-9F23-C1FFC7324605">\n            <text>29000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_E5512B80-ABA8-4AC3-8C49-B06EF88766C6">\n          <inputEntry id="_AD2ED88B-60ED-4496-BD3B-00B846C6896D">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_C8AE250B-C298-459E-ADAE-E4DB66E6CF10">\n            <text>&quot;accord&quot;</text>\n          </inputEntry>\n          <inputEntry id="_5AB55AC7-79BE-4ABE-A02A-F9A8434302AE">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_1762969A-C6F5-4F47-A976-590FC89DB364">\n            <text>26000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_2D3BFB67-6470-4B6F-A9F7-6F751DB898BB">\n          <inputEntry id="_CCB43A93-F686-4CA5-AAD9-D0E13193909B">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_E2E346BA-8D8E-40FF-95C1-D1D3ACE2D594">\n            <text>&quot;cr-v&quot;</text>\n          </inputEntry>\n          <inputEntry id="_F70BFBA1-F5BE-4610-B0C4-90F7A374C941">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_6115DC53-7BC6-47F8-9FC7-1EBF7B687FC2">\n            <text>35000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_A80245B8-8315-41B0-BDCD-523C59F306B3">\n          <inputEntry id="_78DA4A75-F7C5-40A8-B099-B1FAB312E2ED">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_4425F9FA-20D4-4537-8355-60D9E7498F5F">\n            <text>&quot;cr-v&quot;</text>\n          </inputEntry>\n          <inputEntry id="_1E13643A-847A-4011-98E4-9750663C6C99">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_6CCF7307-B81B-4516-A400-7C7452043496">\n            <text>32000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_31820CCC-EAFF-4940-AA3D-72DB64BCF3F4">\n          <inputEntry id="_5E4D37F0-0DC1-4F96-ADC1-FCD585109B1F">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_FC822B92-1F8F-48BC-B027-A200F528C892">\n            <text>&quot;cr-v&quot;</text>\n          </inputEntry>\n          <inputEntry id="_F92BE7D7-79FA-47F6-BF92-147E6DC79880">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_E02B2137-F814-4C72-8AD3-46F22549DB20">\n            <text>29000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_F0B2635F-3538-43D1-95A6-0C346D11C075">\n          <inputEntry id="_FF5C82B0-7736-4882-93AF-C2392E7167F3">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_A3AE40B4-4E9C-4750-AD40-9075FF61AE95">\n            <text>&quot;f-150&quot;</text>\n          </inputEntry>\n          <inputEntry id="_20E3BE3B-FE35-4828-A23A-01860B149622">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_B92A716E-6DE3-4C3A-AE51-CB7C329C1A4F">\n            <text>43000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_A3273665-7F28-4D39-BAB0-6DED54D66D56">\n          <inputEntry id="_94CA0B1D-E4B5-4128-BBAB-538EC545C124">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_E2F16DFB-D4F3-42CA-B872-BF4803CE196D">\n            <text>&quot;f-150&quot;</text>\n          </inputEntry>\n          <inputEntry id="_ABA9F3BB-18AD-44EB-9913-5E86D67B1790">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_56607C0E-3C69-4EF1-9358-003641F2CD64">\n            <text>39000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_97E41358-2628-49EF-8BEF-38354989B09C">\n          <inputEntry id="_C75DCBCC-80A6-4868-8D96-B05B96A5C1AD">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_EBA1512C-97A0-4520-AC49-997F8E81AC83">\n            <text>&quot;f-150&quot;</text>\n          </inputEntry>\n          <inputEntry id="_1264023F-0B64-4DD0-A609-EA69EE562FEF">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_94777CAB-3E58-4A42-B00B-00AE7F5E4F14">\n            <text>35000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_D78A49CE-F723-4B17-A9A1-F22AA2359346">\n          <inputEntry id="_5880E255-E7A1-48BE-8E72-F031BAA324D3">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_562DCB8F-992A-4627-A8C8-FA0893941412">\n            <text>&quot;escape&quot;</text>\n          </inputEntry>\n          <inputEntry id="_9A157AC9-37B4-4929-9213-960BD9FC3929">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_3B167340-5D2D-40E4-9A39-5FDA8B762EED">\n            <text>29000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_158EB3EC-EFA6-490A-8B68-46E19FA5F5AF">\n          <inputEntry id="_1771A652-15DD-4843-BE0C-7100D0D90D4F">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_C61E0392-73C4-499B-946A-E53855E96F93">\n            <text>&quot;escape&quot;</text>\n          </inputEntry>\n          <inputEntry id="_35496E94-A212-4151-AA46-F44FFE8D8C8C">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_42368B33-7119-437C-A77A-876876C6C56C">\n            <text>26000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_409EFEF0-B423-4C08-98B4-24C33BFED7B2">\n          <inputEntry id="_912D3B08-E270-40B6-8319-15FDCEEC621C">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_A3828499-37AC-40BF-9CC8-62BCF4FA21A3">\n            <text>&quot;escape&quot;</text>\n          </inputEntry>\n          <inputEntry id="_DD87C3C5-94D6-4474-9A03-9AAD1F30E86F">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_04FC04F8-F854-405D-98EB-77329802319F">\n            <text>23000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_0B461A48-A9B0-47BF-BE4B-4F60E095157F">\n          <inputEntry id="_FA08B46F-2B6B-43E2-8129-9FE3D7923713">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_51C927E9-13DE-48D0-93C3-AE197394784E">\n            <text>&quot;explorer&quot;</text>\n          </inputEntry>\n          <inputEntry id="_957CA8C7-3DA1-41E5-AE93-CC78CAA9D500">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_DE92A1C6-41E1-4CF4-B149-49FCFCF190C6">\n            <text>40000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_965B196A-563B-497C-B5BB-E6847AD604C2">\n          <inputEntry id="_8881ABE5-DF75-46DE-A78A-21294EFD6FCE">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_2BF38433-9037-4F52-97D8-219DE2A3E298">\n            <text>&quot;explorer&quot;</text>\n          </inputEntry>\n          <inputEntry id="_23F87E78-ACAC-44D1-8146-56AD8DBB28ED">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_2DBBD6DD-7814-4A3B-BF96-34AB96476A53">\n            <text>36000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_9B5E25DA-290B-4E1B-88D2-B30ED5957FCB">\n          <inputEntry id="_3AA41EB5-3818-40E0-9DC1-184478F0B0AF">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_CCEEA9A7-96AB-46E1-BE45-57526C5F592C">\n            <text>&quot;explorer&quot;</text>\n          </inputEntry>\n          <inputEntry id="_66BD081B-3673-4111-83CF-FBFEF72967AC">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_006C5A64-A6D7-499D-982B-4D978A41FF46">\n            <text>33000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n      </decisionTable>\n    </encapsulatedLogic>\n  </businessKnowledgeModel>\n  <inputData name="Make" id="_VVI00001-0000-0000-0000-000000000001">\n    <variable name="Make" id="_VVI00001-0000-0000-0000-000000000002" typeRef="string" />\n  </inputData>\n  <inputData name="Model" id="_VVI00002-0000-0000-0000-000000000001">\n    <variable name="Model" id="_VVI00002-0000-0000-0000-000000000002" typeRef="string" />\n  </inputData>\n  <inputData name="Year" id="_VVI00003-0000-0000-0000-000000000001">\n    <variable name="Year" id="_VVI00003-0000-0000-0000-000000000002" typeRef="number" />\n  </inputData>\n  <dmndi:DMNDI>\n    <dmndi:DMNDiagram id="_VVDIAG01-0000-0000-0000-000000000001" name="Default DRD" useAlternativeInputDataShape="false">\n      <di:extension>\n        <kie:ComponentsWidthsExtension>\n          <kie:ComponentWidths dmnElementRef="_3D4133D1-5169-4C0F-A2D5-0EEA1BDA951B">\n            <kie:width>60</kie:width>\n            <kie:width>118</kie:width>\n            <kie:width>118</kie:width>\n            <kie:width>100</kie:width>\n            <kie:width>118</kie:width>\n            <kie:width>240</kie:width>\n          </kie:ComponentWidths>\n          <kie:ComponentWidths dmnElementRef="_VVD00001-0000-0000-0000-000000000010">\n            <kie:width>240</kie:width>\n          </kie:ComponentWidths>\n        </kie:ComponentsWidthsExtension>\n      </di:extension>\n      <dmndi:DMNShape id="_VVSHAPE_D" dmnElementRef="_VVD00001-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">\n        <dc:Bounds x="332" y="112" width="160" height="80" />\n      </dmndi:DMNShape>\n      <dmndi:DMNShape id="_VVSHAPE_BKM" dmnElementRef="_VVBKM001-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">\n        <dc:Bounds x="572" y="112" width="160" height="80" />\n      </dmndi:DMNShape>\n      <dmndi:DMNShape id="_VVSHAPE_MAKE" dmnElementRef="_VVI00001-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">\n        <dc:Bounds x="112" y="292" width="160" height="80" />\n      </dmndi:DMNShape>\n      <dmndi:DMNShape id="_VVSHAPE_MODEL" dmnElementRef="_VVI00002-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">\n        <dc:Bounds x="332" y="292" width="160" height="80" />\n      </dmndi:DMNShape>\n      <dmndi:DMNShape id="_VVSHAPE_YEAR" dmnElementRef="_VVI00003-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">\n        <dc:Bounds x="552" y="292" width="160" height="80" />\n      </dmndi:DMNShape>\n      <dmndi:DMNEdge id="_VVEDGE_A1" dmnElementRef="_VVD00001-0000-0000-0000-0000000000A1" sourceElement="_VVSHAPE_MAKE" targetElement="_VVSHAPE_D">\n        <di:waypoint x="192" y="292" />\n        <di:waypoint x="412" y="192" />\n      </dmndi:DMNEdge>\n      <dmndi:DMNEdge id="_VVEDGE_A2" dmnElementRef="_VVD00001-0000-0000-0000-0000000000A2" sourceElement="_VVSHAPE_MODEL" targetElement="_VVSHAPE_D">\n        <di:waypoint x="412" y="292" />\n        <di:waypoint x="412" y="192" />\n      </dmndi:DMNEdge>\n      <dmndi:DMNEdge id="_VVEDGE_A3" dmnElementRef="_VVD00001-0000-0000-0000-0000000000A3" sourceElement="_VVSHAPE_YEAR" targetElement="_VVSHAPE_D">\n        <di:waypoint x="632" y="292" />\n        <di:waypoint x="412" y="192" />\n      </dmndi:DMNEdge>\n      <dmndi:DMNEdge id="_VVEDGE_B1" dmnElementRef="_VVD00001-0000-0000-0000-0000000000B1" sourceElement="_VVSHAPE_BKM" targetElement="_VVSHAPE_D">\n        <di:waypoint x="652" y="152" />\n        <di:waypoint x="492" y="152" />\n      </dmndi:DMNEdge>\n    </dmndi:DMNDiagram>\n  </dmndi:DMNDI>\n</definitions>\n	carEstimatedValue	https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D	aletyx
+\.
+
+
+--
+-- Data for Name: models_aud; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.models_aud (model_hash, rev, revtype, description, json_schema, model_content, model_name, namespace, tenant_id) FROM stdin;
+ad72dce881f0901a84d46fa534d4e6fda09ab2f9f6c5aeafb49a7f97b375c379	1	0	\N	{"definitions":{"InputSet":{"type":"object","properties":{"Make":{"type":"string","x-dmn-type":"FEEL:string"},"Model":{"type":"string","x-dmn-type":"FEEL:string"},"Year":{"type":"number","x-dmn-type":"FEEL:number"}},"required":["Make","Model","Year"],"x-dmn-type":"DMNType{ https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D : InputSet }","x-dmn-descriptions":{"Year":null,"Model":null,"Make":null}},"OutputSet":{"type":"object","properties":{"estimatedValue":{"type":"number","x-dmn-type":"FEEL:number"},"Make":{"type":"string","x-dmn-type":"FEEL:string"},"Model":{"type":"string","x-dmn-type":"FEEL:string"},"Year":{"type":"number","x-dmn-type":"FEEL:number"}},"x-dmn-type":"DMNType{ https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D : OutputSet }","x-dmn-descriptions":{"estimatedValue":null,"Year":null,"Model":null,"Make":null}}}}	<?xml version="1.0" encoding="UTF-8" ?>\n<definitions xmlns="https://www.omg.org/spec/DMN/20240513/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" expressionLanguage="https://www.omg.org/spec/DMN/20240513/FEEL/" namespace="https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D" id="_5B0D8E2A-6C43-4F17-9B58-1E2D3C4B5A69" name="carEstimatedValue">\n  <decision name="estimatedValue" id="_VVD00001-0000-0000-0000-000000000001">\n    <variable name="estimatedValue" id="_VVD00001-0000-0000-0000-000000000002" typeRef="number" />\n    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A1">\n      <requiredInput href="#_VVI00001-0000-0000-0000-000000000001" />\n    </informationRequirement>\n    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A2">\n      <requiredInput href="#_VVI00002-0000-0000-0000-000000000001" />\n    </informationRequirement>\n    <informationRequirement id="_VVD00001-0000-0000-0000-0000000000A3">\n      <requiredInput href="#_VVI00003-0000-0000-0000-000000000001" />\n    </informationRequirement>\n    <knowledgeRequirement id="_VVD00001-0000-0000-0000-0000000000B1">\n      <requiredKnowledge href="#_VVBKM001-0000-0000-0000-000000000001" />\n    </knowledgeRequirement>\n    <literalExpression id="_VVD00001-0000-0000-0000-000000000010" typeRef="number">\n      <text>carEstimatedValue(Make, Model, Year)</text>\n    </literalExpression>\n  </decision>\n  <businessKnowledgeModel name="carEstimatedValue" id="_VVBKM001-0000-0000-0000-000000000001">\n    <variable name="carEstimatedValue" id="_VVBKM001-0000-0000-0000-000000000002" />\n    <encapsulatedLogic id="_VVBKM001-0000-0000-0000-000000000003" kind="FEEL">\n      <formalParameter id="_VVBKM001-0000-0000-0000-000000000004" name="Make" typeRef="string" />\n      <formalParameter id="_VVBKM001-0000-0000-0000-000000000005" name="Model" typeRef="string" />\n      <formalParameter id="_VVBKM001-0000-0000-0000-000000000006" name="Year" typeRef="number" />\n      <decisionTable id="_3D4133D1-5169-4C0F-A2D5-0EEA1BDA951B" typeRef="number" hitPolicy="UNIQUE" label="carEstimatedValueTable">\n        <input id="_6D7E43A1-C8FD-4857-8857-45F5933BCA38">\n          <inputExpression id="_9D27E3B9-76F2-4E55-8FDC-C326EE154F20" typeRef="string">\n            <text>Make</text>\n          </inputExpression>\n        </input>\n        <input id="_C7A38FEA-DDFF-4F82-8624-62094D7C9B7F">\n          <inputExpression id="_B9473A69-1EB6-4A0A-BCDB-53873FCEE15D" typeRef="string">\n            <text>Model</text>\n          </inputExpression>\n        </input>\n        <input id="_27E202E5-6650-48C8-96E2-BF01AA9D4654">\n          <inputExpression id="_49EFA952-2854-4BD7-903B-DB93D9D6ED4F" typeRef="number">\n            <text>Year</text>\n          </inputExpression>\n        </input>\n        <output id="_2ECB7C13-698C-491D-81AE-CC6FC0343189" />\n        <annotation name="Annotations" />\n        <rule id="_143D1759-CA9F-4754-8C44-1F9753D57911">\n          <inputEntry id="_3A98B1BF-94A7-415E-9C13-03A6D6643BF9">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_2A2E5292-F400-4AF2-B761-F84755C42EE4">\n            <text>&quot;camry&quot;</text>\n          </inputEntry>\n          <inputEntry id="_07EB9805-443E-4F7D-B644-92DB88CB862A">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_6073E28E-FD6C-4D1B-9E59-F1440F5876C1">\n            <text>30000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text>// Your annotations here</text>\n          </annotationEntry>\n        </rule>\n        <rule id="_819CFBD9-F853-47A6-AA93-42AF58E20DE9">\n          <inputEntry id="_E69CF127-15AD-47FF-863B-1CF9763E0DF0">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_9FD0A0AB-CA54-491A-B458-AF5BDD133FEE">\n            <text>&quot;camry&quot;</text>\n          </inputEntry>\n          <inputEntry id="_C0744888-2B3E-4A2C-A68E-3705344B206A">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_128E0225-97B3-4C4C-AD36-223EC8F65B88">\n            <text>27000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_6DE2B067-7F3C-433C-BD86-5E0CDD5B005A">\n          <inputEntry id="_336C13C4-2D5B-4664-A6E1-BFE05871A046">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_F302850E-5875-4531-840B-B8E572EBD52B">\n            <text>&quot;camry&quot;</text>\n          </inputEntry>\n          <inputEntry id="_F6F08594-FEF4-4F51-A48B-8F41839B4FED">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_B14B306D-2BF8-479A-ACFE-6042085C0CF0">\n            <text>24000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_4856581A-9BF4-473A-A097-8187780A1AF6">\n          <inputEntry id="_3AA0D61B-9AC8-461C-926A-F9A3D7B14BF4">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_888621D8-3955-4F59-8CAC-198221E6FD77">\n            <text>&quot;corolla&quot;</text>\n          </inputEntry>\n          <inputEntry id="_A44DD352-E7EA-4796-9B50-5500549AB5DD">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_E27921E3-FD57-414B-8A17-93DD33A53F59">\n            <text>25000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_131AB885-CF37-493B-90EE-FD7E4203E08E">\n          <inputEntry id="_093D6879-6882-4F9A-A795-7393006F4AB5">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_AE0CDB3C-4320-4B0D-A27E-278DD5C0C526">\n            <text>&quot;corolla&quot;</text>\n          </inputEntry>\n          <inputEntry id="_67FE58D7-B352-4517-85F2-BE049D7C9758">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_B0348821-6B27-42B7-825B-9D0F4B90DD22">\n            <text>22000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_C7DE12B7-42EA-4B0B-891A-68EB02E5FEE6">\n          <inputEntry id="_750C017B-5963-433A-A321-D46E4CCB61EA">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_0D5628F8-17FD-4D3B-AE4F-DF585420F30A">\n            <text>&quot;corolla&quot;</text>\n          </inputEntry>\n          <inputEntry id="_ED38DDFA-2387-4590-9A87-4FFB521DC980">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_C70C7C98-DD29-43AF-9715-7CEEF193A583">\n            <text>20000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_87F90EE6-899E-4313-845F-79FB38EF2F2B">\n          <inputEntry id="_DE615161-8302-4550-8DD0-D4AF736A006D">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_C474E651-CEE8-4299-8ECD-AECAD04CC6C7">\n            <text>&quot;rav4&quot;</text>\n          </inputEntry>\n          <inputEntry id="_4B7E6F9A-AF65-4BA0-9F61-3597DD2C8307">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_6CA6340E-8641-46EF-B6EF-5515FA766C29">\n            <text>34000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_BE69C064-EAC8-4185-AE33-7DBB1593EA82">\n          <inputEntry id="_BA7D5BD9-6B5C-473E-87F7-51EDC13D2B08">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_699E38EC-0D21-48C3-A6F8-B6E13F472261">\n            <text>&quot;rav4&quot;</text>\n          </inputEntry>\n          <inputEntry id="_C7AAF80E-448F-4A58-B02D-57F91E8BFAB9">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_654524CC-163F-416F-A10D-F9E9E83626C3">\n            <text>31000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_84D143FD-FD56-4E26-AB9F-990F8F2FE856">\n          <inputEntry id="_DC0F1CF7-8DBE-4F6E-BCF6-A6123E396DAA">\n            <text>&quot;toyota&quot;</text>\n          </inputEntry>\n          <inputEntry id="_AC5ED03E-5A4F-4D7F-ACE5-4C4E6755B307">\n            <text>&quot;rav4&quot;</text>\n          </inputEntry>\n          <inputEntry id="_25E73363-C7B7-4845-9C89-2492C516E615">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_CC3CD58E-1D78-47FB-9D13-8C7328FC62A8">\n            <text>28000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_EC105BD6-FE19-4798-B205-E97696B491C8">\n          <inputEntry id="_85ACC8D2-E4C0-4C14-BC2F-C791BBCEE1F1">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_E135A592-8328-456F-910A-86564DD345DA">\n            <text>&quot;civic&quot;</text>\n          </inputEntry>\n          <inputEntry id="_865E4164-690D-4158-9098-78D79AF546CB">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_DF1322F6-1263-44DC-90EF-692989D5AC98">\n            <text>28000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_A6C9D591-A77D-411C-B91A-C822AEC19E4D">\n          <inputEntry id="_35CF75C7-2943-4264-9DDD-7BE79E51BB60">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_418335CB-F35A-4DF3-BE73-BF306CCBAB43">\n            <text>&quot;civic&quot;</text>\n          </inputEntry>\n          <inputEntry id="_AA82F3AF-2461-492D-BD54-45EB8AA5CA6E">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_88C8D85D-090D-4A21-B838-72E329A61B30">\n            <text>25000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_3386D4DD-16D1-458E-AB20-27B4BB278487">\n          <inputEntry id="_42DF7AA5-F8B4-4153-8C1C-EA8003FEB372">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_CAE23ECF-AA10-47C6-8527-759622EE80A7">\n            <text>&quot;civic&quot;</text>\n          </inputEntry>\n          <inputEntry id="_6FD4C392-E677-4057-922F-59C22D99C0E7">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_A1941E95-3616-4EF9-9280-93271D291F6F">\n            <text>22000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_7CE6D8EA-1914-44A4-AE47-014AC21EF4B5">\n          <inputEntry id="_A7B84952-E84A-4034-8A34-26E14092FC77">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_629673FA-8148-49D1-9491-3FDE51620B5F">\n            <text>&quot;accord&quot;</text>\n          </inputEntry>\n          <inputEntry id="_6E113CB8-0F3A-45AE-AC66-3E8FEC64E21A">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_DED16387-30D9-4AD9-B3F1-C58C058A7C06">\n            <text>32000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_88582E2D-AEDA-415A-B9B5-AA89511EAF99">\n          <inputEntry id="_1227A4B5-95E1-4466-AD88-42228E33A691">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_7AE77CB2-04FB-4713-B1D4-622410201F17">\n            <text>&quot;accord&quot;</text>\n          </inputEntry>\n          <inputEntry id="_E1E723BA-D178-4344-85D0-A0F78FF39DE7">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_5A59D2E9-237B-4AB0-9F23-C1FFC7324605">\n            <text>29000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_E5512B80-ABA8-4AC3-8C49-B06EF88766C6">\n          <inputEntry id="_AD2ED88B-60ED-4496-BD3B-00B846C6896D">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_C8AE250B-C298-459E-ADAE-E4DB66E6CF10">\n            <text>&quot;accord&quot;</text>\n          </inputEntry>\n          <inputEntry id="_5AB55AC7-79BE-4ABE-A02A-F9A8434302AE">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_1762969A-C6F5-4F47-A976-590FC89DB364">\n            <text>26000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_2D3BFB67-6470-4B6F-A9F7-6F751DB898BB">\n          <inputEntry id="_CCB43A93-F686-4CA5-AAD9-D0E13193909B">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_E2E346BA-8D8E-40FF-95C1-D1D3ACE2D594">\n            <text>&quot;cr-v&quot;</text>\n          </inputEntry>\n          <inputEntry id="_F70BFBA1-F5BE-4610-B0C4-90F7A374C941">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_6115DC53-7BC6-47F8-9FC7-1EBF7B687FC2">\n            <text>35000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_A80245B8-8315-41B0-BDCD-523C59F306B3">\n          <inputEntry id="_78DA4A75-F7C5-40A8-B099-B1FAB312E2ED">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_4425F9FA-20D4-4537-8355-60D9E7498F5F">\n            <text>&quot;cr-v&quot;</text>\n          </inputEntry>\n          <inputEntry id="_1E13643A-847A-4011-98E4-9750663C6C99">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_6CCF7307-B81B-4516-A400-7C7452043496">\n            <text>32000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_31820CCC-EAFF-4940-AA3D-72DB64BCF3F4">\n          <inputEntry id="_5E4D37F0-0DC1-4F96-ADC1-FCD585109B1F">\n            <text>&quot;honda&quot;</text>\n          </inputEntry>\n          <inputEntry id="_FC822B92-1F8F-48BC-B027-A200F528C892">\n            <text>&quot;cr-v&quot;</text>\n          </inputEntry>\n          <inputEntry id="_F92BE7D7-79FA-47F6-BF92-147E6DC79880">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_E02B2137-F814-4C72-8AD3-46F22549DB20">\n            <text>29000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_F0B2635F-3538-43D1-95A6-0C346D11C075">\n          <inputEntry id="_FF5C82B0-7736-4882-93AF-C2392E7167F3">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_A3AE40B4-4E9C-4750-AD40-9075FF61AE95">\n            <text>&quot;f-150&quot;</text>\n          </inputEntry>\n          <inputEntry id="_20E3BE3B-FE35-4828-A23A-01860B149622">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_B92A716E-6DE3-4C3A-AE51-CB7C329C1A4F">\n            <text>43000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_A3273665-7F28-4D39-BAB0-6DED54D66D56">\n          <inputEntry id="_94CA0B1D-E4B5-4128-BBAB-538EC545C124">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_E2F16DFB-D4F3-42CA-B872-BF4803CE196D">\n            <text>&quot;f-150&quot;</text>\n          </inputEntry>\n          <inputEntry id="_ABA9F3BB-18AD-44EB-9913-5E86D67B1790">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_56607C0E-3C69-4EF1-9358-003641F2CD64">\n            <text>39000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_97E41358-2628-49EF-8BEF-38354989B09C">\n          <inputEntry id="_C75DCBCC-80A6-4868-8D96-B05B96A5C1AD">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_EBA1512C-97A0-4520-AC49-997F8E81AC83">\n            <text>&quot;f-150&quot;</text>\n          </inputEntry>\n          <inputEntry id="_1264023F-0B64-4DD0-A609-EA69EE562FEF">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_94777CAB-3E58-4A42-B00B-00AE7F5E4F14">\n            <text>35000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_D78A49CE-F723-4B17-A9A1-F22AA2359346">\n          <inputEntry id="_5880E255-E7A1-48BE-8E72-F031BAA324D3">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_562DCB8F-992A-4627-A8C8-FA0893941412">\n            <text>&quot;escape&quot;</text>\n          </inputEntry>\n          <inputEntry id="_9A157AC9-37B4-4929-9213-960BD9FC3929">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_3B167340-5D2D-40E4-9A39-5FDA8B762EED">\n            <text>29000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_158EB3EC-EFA6-490A-8B68-46E19FA5F5AF">\n          <inputEntry id="_1771A652-15DD-4843-BE0C-7100D0D90D4F">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_C61E0392-73C4-499B-946A-E53855E96F93">\n            <text>&quot;escape&quot;</text>\n          </inputEntry>\n          <inputEntry id="_35496E94-A212-4151-AA46-F44FFE8D8C8C">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_42368B33-7119-437C-A77A-876876C6C56C">\n            <text>26000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_409EFEF0-B423-4C08-98B4-24C33BFED7B2">\n          <inputEntry id="_912D3B08-E270-40B6-8319-15FDCEEC621C">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_A3828499-37AC-40BF-9CC8-62BCF4FA21A3">\n            <text>&quot;escape&quot;</text>\n          </inputEntry>\n          <inputEntry id="_DD87C3C5-94D6-4474-9A03-9AAD1F30E86F">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_04FC04F8-F854-405D-98EB-77329802319F">\n            <text>23000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_0B461A48-A9B0-47BF-BE4B-4F60E095157F">\n          <inputEntry id="_FA08B46F-2B6B-43E2-8129-9FE3D7923713">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_51C927E9-13DE-48D0-93C3-AE197394784E">\n            <text>&quot;explorer&quot;</text>\n          </inputEntry>\n          <inputEntry id="_957CA8C7-3DA1-41E5-AE93-CC78CAA9D500">\n            <text>2026</text>\n          </inputEntry>\n          <outputEntry id="_DE92A1C6-41E1-4CF4-B149-49FCFCF190C6">\n            <text>40000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_965B196A-563B-497C-B5BB-E6847AD604C2">\n          <inputEntry id="_8881ABE5-DF75-46DE-A78A-21294EFD6FCE">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_2BF38433-9037-4F52-97D8-219DE2A3E298">\n            <text>&quot;explorer&quot;</text>\n          </inputEntry>\n          <inputEntry id="_23F87E78-ACAC-44D1-8146-56AD8DBB28ED">\n            <text>2025</text>\n          </inputEntry>\n          <outputEntry id="_2DBBD6DD-7814-4A3B-BF96-34AB96476A53">\n            <text>36000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n        <rule id="_9B5E25DA-290B-4E1B-88D2-B30ED5957FCB">\n          <inputEntry id="_3AA41EB5-3818-40E0-9DC1-184478F0B0AF">\n            <text>&quot;ford&quot;</text>\n          </inputEntry>\n          <inputEntry id="_CCEEA9A7-96AB-46E1-BE45-57526C5F592C">\n            <text>&quot;explorer&quot;</text>\n          </inputEntry>\n          <inputEntry id="_66BD081B-3673-4111-83CF-FBFEF72967AC">\n            <text>2024</text>\n          </inputEntry>\n          <outputEntry id="_006C5A64-A6D7-499D-982B-4D978A41FF46">\n            <text>33000</text>\n          </outputEntry>\n          <annotationEntry>\n            <text></text>\n          </annotationEntry>\n        </rule>\n      </decisionTable>\n    </encapsulatedLogic>\n  </businessKnowledgeModel>\n  <inputData name="Make" id="_VVI00001-0000-0000-0000-000000000001">\n    <variable name="Make" id="_VVI00001-0000-0000-0000-000000000002" typeRef="string" />\n  </inputData>\n  <inputData name="Model" id="_VVI00002-0000-0000-0000-000000000001">\n    <variable name="Model" id="_VVI00002-0000-0000-0000-000000000002" typeRef="string" />\n  </inputData>\n  <inputData name="Year" id="_VVI00003-0000-0000-0000-000000000001">\n    <variable name="Year" id="_VVI00003-0000-0000-0000-000000000002" typeRef="number" />\n  </inputData>\n  <dmndi:DMNDI>\n    <dmndi:DMNDiagram id="_VVDIAG01-0000-0000-0000-000000000001" name="Default DRD" useAlternativeInputDataShape="false">\n      <di:extension>\n        <kie:ComponentsWidthsExtension>\n          <kie:ComponentWidths dmnElementRef="_3D4133D1-5169-4C0F-A2D5-0EEA1BDA951B">\n            <kie:width>60</kie:width>\n            <kie:width>118</kie:width>\n            <kie:width>118</kie:width>\n            <kie:width>100</kie:width>\n            <kie:width>118</kie:width>\n            <kie:width>240</kie:width>\n          </kie:ComponentWidths>\n          <kie:ComponentWidths dmnElementRef="_VVD00001-0000-0000-0000-000000000010">\n            <kie:width>240</kie:width>\n          </kie:ComponentWidths>\n        </kie:ComponentsWidthsExtension>\n      </di:extension>\n      <dmndi:DMNShape id="_VVSHAPE_D" dmnElementRef="_VVD00001-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">\n        <dc:Bounds x="332" y="112" width="160" height="80" />\n      </dmndi:DMNShape>\n      <dmndi:DMNShape id="_VVSHAPE_BKM" dmnElementRef="_VVBKM001-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">\n        <dc:Bounds x="572" y="112" width="160" height="80" />\n      </dmndi:DMNShape>\n      <dmndi:DMNShape id="_VVSHAPE_MAKE" dmnElementRef="_VVI00001-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">\n        <dc:Bounds x="112" y="292" width="160" height="80" />\n      </dmndi:DMNShape>\n      <dmndi:DMNShape id="_VVSHAPE_MODEL" dmnElementRef="_VVI00002-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">\n        <dc:Bounds x="332" y="292" width="160" height="80" />\n      </dmndi:DMNShape>\n      <dmndi:DMNShape id="_VVSHAPE_YEAR" dmnElementRef="_VVI00003-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">\n        <dc:Bounds x="552" y="292" width="160" height="80" />\n      </dmndi:DMNShape>\n      <dmndi:DMNEdge id="_VVEDGE_A1" dmnElementRef="_VVD00001-0000-0000-0000-0000000000A1" sourceElement="_VVSHAPE_MAKE" targetElement="_VVSHAPE_D">\n        <di:waypoint x="192" y="292" />\n        <di:waypoint x="412" y="192" />\n      </dmndi:DMNEdge>\n      <dmndi:DMNEdge id="_VVEDGE_A2" dmnElementRef="_VVD00001-0000-0000-0000-0000000000A2" sourceElement="_VVSHAPE_MODEL" targetElement="_VVSHAPE_D">\n        <di:waypoint x="412" y="292" />\n        <di:waypoint x="412" y="192" />\n      </dmndi:DMNEdge>\n      <dmndi:DMNEdge id="_VVEDGE_A3" dmnElementRef="_VVD00001-0000-0000-0000-0000000000A3" sourceElement="_VVSHAPE_YEAR" targetElement="_VVSHAPE_D">\n        <di:waypoint x="632" y="292" />\n        <di:waypoint x="412" y="192" />\n      </dmndi:DMNEdge>\n      <dmndi:DMNEdge id="_VVEDGE_B1" dmnElementRef="_VVD00001-0000-0000-0000-0000000000B1" sourceElement="_VVSHAPE_BKM" targetElement="_VVSHAPE_D">\n        <di:waypoint x="652" y="152" />\n        <di:waypoint x="492" y="152" />\n      </dmndi:DMNEdge>\n    </dmndi:DMNDiagram>\n  </dmndi:DMNDI>\n</definitions>\n	carEstimatedValue	https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D	aletyx
+\.
+
+
+--
+-- Data for Name: models_refs; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.models_refs (id, description, status, tenant_id, model_hash, unit_id, version_id) FROM stdin;
+1	\N	ENABLED	aletyx	ad72dce881f0901a84d46fa534d4e6fda09ab2f9f6c5aeafb49a7f97b375c379	1	1
+\.
+
+
+--
+-- Data for Name: models_refs_aud; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.models_refs_aud (id, rev, revtype, description, status, tenant_id, model_hash, unit_id, version_id) FROM stdin;
+1	1	0	\N	JUST_CREATED	aletyx	ad72dce881f0901a84d46fa534d4e6fda09ab2f9f6c5aeafb49a7f97b375c379	1	1
+\.
+
+
+--
+-- Data for Name: quote_request; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.quote_request (id, first_name, last_name, date_of_birth, email, phone, street_address, city, state, zip_code, marital_status, age_when_first_licensed, vehicle_year, make, model, vin, primary_use, annual_mileage, ownership, overnight_parking, coverage_level, deductible, desired_start_date, prior_insurance, accidents_last_5_years, violations_last_3_years) FROM stdin;
+\.
+
+
+--
+-- Data for Name: quote_response; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.quote_response (id, quote_request_id, estimated_vehicle_price, risk_rate) FROM stdin;
+\.
+
+
+--
+-- Data for Name: refresh_log; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.refresh_log (id, created_at, origin, tenant_id, unit_id) FROM stdin;
+1	2026-07-13 15:04:06.646178+00	96bb53c4-3841-40d0-86ba-612bd1df62ae	aletyx	1
+\.
+
+
+--
+-- Data for Name: revisions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.revisions (id, tenant_id, "timestamp", username) FROM stdin;
+1	aletyx	1783955046530	dev-user@example.com
+\.
+
+
+--
+-- Data for Name: units; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.units (id, date_created, description, name, status, tenant_id) FROM stdin;
+1	2026-07-13 15:04:06.350284+00	\N	carEstimatedValue.dmn	ENABLED	aletyx
+\.
+
+
+--
+-- Data for Name: units_aud; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.units_aud (id, rev, revtype, date_created, description, name, status, tenant_id) FROM stdin;
+1	1	0	2026-07-13 15:04:06.350284+00	\N	carEstimatedValue.dmn	JUST_CREATED	aletyx
+\.
+
+
+--
+-- Data for Name: versions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.versions (id, commit_hash, date_created, description, is_latest_enabled, ref_name, repository_url, status, tenant_id, version_number, unit_id) FROM stdin;
+1	\N	2026-07-13 15:04:06.481815+00	\N	t	\N	\N	ENABLED	aletyx	1	1
+\.
+
+
+--
+-- Data for Name: versions_aud; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.versions_aud (id, rev, revtype, commit_hash, date_created, description, is_latest_enabled, ref_name, repository_url, status, tenant_id, version_number, unit_id) FROM stdin;
+1	1	0	\N	2026-07-13 15:04:06.481815+00	\N	f	\N	\N	JUST_CREATED	aletyx	1	1
+\.
+
+
+--
+-- Name: car_maker_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.car_maker_id_seq', 3, true);
+
+
+--
+-- Name: car_model_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.car_model_id_seq', 9, true);
+
+
+--
+-- Name: models_refs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.models_refs_id_seq', 1, true);
+
+
+--
+-- Name: quote_request_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.quote_request_id_seq', 1, false);
+
+
+--
+-- Name: quote_response_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.quote_response_id_seq', 1, false);
+
+
+--
+-- Name: refresh_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.refresh_log_id_seq', 1, true);
+
+
+--
+-- Name: revisions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.revisions_id_seq', 1, true);
+
+
+--
+-- Name: units_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.units_id_seq', 1, true);
+
+
+--
+-- Name: versions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.versions_id_seq', 1, true);
+
+
+--
+-- Name: car_maker car_maker_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.car_maker
+    ADD CONSTRAINT car_maker_name_key UNIQUE (name);
+
+
+--
+-- Name: car_maker car_maker_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.car_maker
+    ADD CONSTRAINT car_maker_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: car_model car_model_car_maker_id_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.car_model
+    ADD CONSTRAINT car_model_car_maker_id_name_key UNIQUE (car_maker_id, name);
+
+
+--
+-- Name: car_model car_model_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.car_model
+    ADD CONSTRAINT car_model_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: execution_logs execution_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.execution_logs
+    ADD CONSTRAINT execution_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: flyway_schema_history flyway_schema_history_pk; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.flyway_schema_history
+    ADD CONSTRAINT flyway_schema_history_pk PRIMARY KEY (installed_rank);
+
+
+--
+-- Name: models_aud models_aud_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.models_aud
+    ADD CONSTRAINT models_aud_pkey PRIMARY KEY (rev, model_hash);
+
+
+--
+-- Name: models models_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.models
+    ADD CONSTRAINT models_pkey PRIMARY KEY (model_hash);
+
+
+--
+-- Name: models_refs_aud models_refs_aud_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.models_refs_aud
+    ADD CONSTRAINT models_refs_aud_pkey PRIMARY KEY (rev, id);
+
+
+--
+-- Name: models_refs models_refs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.models_refs
+    ADD CONSTRAINT models_refs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: quote_request quote_request_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_request
+    ADD CONSTRAINT quote_request_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: quote_response quote_response_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_response
+    ADD CONSTRAINT quote_response_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: quote_response quote_response_quote_request_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_response
+    ADD CONSTRAINT quote_response_quote_request_id_key UNIQUE (quote_request_id);
+
+
+--
+-- Name: refresh_log refresh_log_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refresh_log
+    ADD CONSTRAINT refresh_log_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: revisions revisions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.revisions
+    ADD CONSTRAINT revisions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: units ukaakmk963dh8t8m6jhrn4742tf; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.units
+    ADD CONSTRAINT ukaakmk963dh8t8m6jhrn4742tf UNIQUE (tenant_id, name);
+
+
+--
+-- Name: units_aud units_aud_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.units_aud
+    ADD CONSTRAINT units_aud_pkey PRIMARY KEY (rev, id);
+
+
+--
+-- Name: units units_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.units
+    ADD CONSTRAINT units_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: versions_aud versions_aud_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.versions_aud
+    ADD CONSTRAINT versions_aud_pkey PRIMARY KEY (rev, id);
+
+
+--
+-- Name: versions versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.versions
+    ADD CONSTRAINT versions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: flyway_schema_history_s_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX flyway_schema_history_s_idx ON public.flyway_schema_history USING btree (success);
+
+
+--
+-- Name: idx_business_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_business_key ON public.execution_logs USING btree (business_key);
+
+
+--
+-- Name: idx_execution_logs_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_execution_logs_tenant ON public.execution_logs USING btree (tenant_id);
+
+
+--
+-- Name: idx_model_hash; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_model_hash ON public.execution_logs USING btree (model_hash);
+
+
+--
+-- Name: idx_models_refs_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_models_refs_tenant ON public.models_refs USING btree (tenant_id);
+
+
+--
+-- Name: idx_models_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_models_tenant ON public.models USING btree (tenant_id);
+
+
+--
+-- Name: idx_refresh_log_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_refresh_log_tenant ON public.refresh_log USING btree (tenant_id);
+
+
+--
+-- Name: idx_revisions_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_revisions_tenant ON public.revisions USING btree (tenant_id);
+
+
+--
+-- Name: idx_timestamp; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_timestamp ON public.execution_logs USING btree ("timestamp");
+
+
+--
+-- Name: idx_units_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_units_tenant ON public.units USING btree (tenant_id);
+
+
+--
+-- Name: idx_versions_tenant; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_versions_tenant ON public.versions USING btree (tenant_id);
+
+
+--
+-- Name: car_model car_model_car_maker_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.car_model
+    ADD CONSTRAINT car_model_car_maker_id_fkey FOREIGN KEY (car_maker_id) REFERENCES public.car_maker(id);
+
+
+--
+-- Name: models_refs fk4tb9rickso1g60o8r8rnw45we; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.models_refs
+    ADD CONSTRAINT fk4tb9rickso1g60o8r8rnw45we FOREIGN KEY (unit_id) REFERENCES public.units(id);
+
+
+--
+-- Name: models_refs_aud fk67uqib536e304n0p281y2lh2d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.models_refs_aud
+    ADD CONSTRAINT fk67uqib536e304n0p281y2lh2d FOREIGN KEY (rev) REFERENCES public.revisions(id);
+
+
+--
+-- Name: models_refs fk8yohpjpgcic79ililcsndmx6w; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.models_refs
+    ADD CONSTRAINT fk8yohpjpgcic79ililcsndmx6w FOREIGN KEY (version_id) REFERENCES public.versions(id);
+
+
+--
+-- Name: versions fkbvbgylfug4vn2y8bqrup5lu2q; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.versions
+    ADD CONSTRAINT fkbvbgylfug4vn2y8bqrup5lu2q FOREIGN KEY (unit_id) REFERENCES public.units(id);
+
+
+--
+-- Name: units_aud fkdq1s1lvwag6xtuqpys21yxjyy; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.units_aud
+    ADD CONSTRAINT fkdq1s1lvwag6xtuqpys21yxjyy FOREIGN KEY (rev) REFERENCES public.revisions(id);
+
+
+--
+-- Name: models_refs fkkt2gopuudtx0pdg31ignl264q; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.models_refs
+    ADD CONSTRAINT fkkt2gopuudtx0pdg31ignl264q FOREIGN KEY (model_hash) REFERENCES public.models(model_hash);
+
+
+--
+-- Name: models_aud fko190tiq8wh0vcgean4dy20maa; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.models_aud
+    ADD CONSTRAINT fko190tiq8wh0vcgean4dy20maa FOREIGN KEY (rev) REFERENCES public.revisions(id);
+
+
+--
+-- Name: versions_aud fktl1wph3fxfaq9fyvbej902upb; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.versions_aud
+    ADD CONSTRAINT fktl1wph3fxfaq9fyvbej902upb FOREIGN KEY (rev) REFERENCES public.revisions(id);
+
+
+--
+-- Name: quote_response quote_response_quote_request_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quote_response
+    ADD CONSTRAINT quote_response_quote_request_id_fkey FOREIGN KEY (quote_request_id) REFERENCES public.quote_request(id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict iuNNf0sJ6ntPKNu2inSYB9ghE526pu5FSrGHgj5BaJD8JF2r2moGcyHfjJdMPWI
+

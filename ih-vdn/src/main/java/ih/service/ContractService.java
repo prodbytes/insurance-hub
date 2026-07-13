@@ -6,15 +6,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.Optional;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import ih.Parameters;
 import ih.domain.QuoteRequest;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 /**
  * Starts car-contract process instances on the Aletyx Decision Control engine
@@ -31,8 +30,8 @@ public class ContractService {
     // Decision Control process-start endpoint for the car-contract process.
     // Optional: the URL is only exported when the model upload resolved it, and
     // an empty value must not fail Quarkus config validation at startup.
-    @ConfigProperty(name = "ih.contract.process-start.url")
-    Optional<String> processStartUrl;
+    @Inject
+    Parameters params;
 
     public ContractService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -46,6 +45,7 @@ public class ContractService {
      *         engine cannot be reached, or it rejects the request
      */
     public long startContract(QuoteRequest request) {
+        var processStartUrl = params.contract().processStartUrl();
         var url = processStartUrl.filter(u -> !u.isBlank()).orElseThrow(() -> new ContractProcessException(
                 "Contract process endpoint is not configured (ih.contract.process-start.url)"));
 
