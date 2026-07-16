@@ -21,7 +21,15 @@
       "Bash(curl -sI *)",
       "Bash(unzip -l *)",
       "Bash(python3 -m json.tool *)",
-      "mcp__mintlify-docs__search_mintlify"
+      "mcp__mintlify-docs__search_mintlify",
+      "Bash(curl -s http://localhost:*)",
+      "Bash(curl -s -m 5 http://localhost:*)",
+      "Bash(curl -s -m 30 http://localhost:*)",
+      "Bash(curl -s -m 60 http://localhost:*)",
+      "Bash(curl -s -X POST http://localhost:8081/api/runtime/*)",
+      "Bash(process-compose process logs *)",
+      "Bash(/home/vscode/.local/share/devbox/util/.devbox/nix/profile/default/bin/process-compose process logs *)",
+      "Bash(unzip -p *)"
     ]
   }
 }

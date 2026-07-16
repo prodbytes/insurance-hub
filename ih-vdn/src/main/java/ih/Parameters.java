@@ -22,6 +22,11 @@ public interface Parameters {
         @WithName("vehicle-price.url")
         Optional<String> vehiclePriceUrl();
 
+        // Runtime endpoint of the standalone carEstimatedValue model, invoked
+        // separately to obtain the value the carQuote model takes as input.
+        @WithName("vehicle-value.url")
+        Optional<String> vehicleValueUrl();
+
         @WithDefault("0.15")
         BigDecimal viabilityThreshold();
     }

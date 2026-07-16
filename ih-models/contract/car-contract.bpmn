@@ -79,7 +79,7 @@ System.out.println("[car-contract] Selected provider " + lowest.get("provider") 
         <dataInput id="_estimateValue_MakeInput" name="Make" />
         <dataInput id="_estimateValue_ModelInput" name="Model" />
         <dataInput id="_estimateValue_YearInput" name="Year" />
-        <dataOutput id="_estimateValue_EVVOutput" name="carEstimatedValue" />
+        <dataOutput id="_estimateValue_EVVOutput" name="estimatedValue" />
         <inputSet>
           <dataInputRefs>_estimateValue_namespaceInput</dataInputRefs>
           <dataInputRefs>_estimateValue_modelInput</dataInputRefs>
@@ -95,21 +95,21 @@ System.out.println("[car-contract] Selected provider " + lowest.get("provider") 
       <dataInputAssociation>
         <targetRef>_estimateValue_namespaceInput</targetRef>
         <assignment>
-          <from xsi:type="tFormalExpression">https://kie.org/dmn/_03709CE1-A299-4537-B2BA-39E6E442C1B8</from>
+          <from xsi:type="tFormalExpression">https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D</from>
           <to xsi:type="tFormalExpression">_estimateValue_namespaceInput</to>
         </assignment>
       </dataInputAssociation>
       <dataInputAssociation>
         <targetRef>_estimateValue_modelInput</targetRef>
         <assignment>
-          <from xsi:type="tFormalExpression">carQuote</from>
+          <from xsi:type="tFormalExpression">carEstimatedValue</from>
           <to xsi:type="tFormalExpression">_estimateValue_modelInput</to>
         </assignment>
       </dataInputAssociation>
       <dataInputAssociation>
         <targetRef>_estimateValue_decisionInput</targetRef>
         <assignment>
-          <from xsi:type="tFormalExpression">carEstimatedValue</from>
+          <from xsi:type="tFormalExpression">estimatedValue</from>
           <to xsi:type="tFormalExpression">_estimateValue_decisionInput</to>
         </assignment>
       </dataInputAssociation>

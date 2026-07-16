@@ -10,8 +10,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.HashMap;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import java.util.Optional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,16 +24,21 @@ import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 /**
- * Calculates insurance quotes. The estimated vehicle value and the risk rate
- * both come from the car-quote DMN model, evaluated by the Aletyx Decision
- * Control engine over its KIE-compatible runtime REST API. A single evaluation
- * returns both outputs; the final premium is derived from them on the response.
- * The request and its computed response are persisted as a one-to-one pair.
+ * Calculates insurance quotes with two DMN evaluations on the Aletyx Decision
+ * Control engine (KIE-compatible runtime REST API): the carEstimatedValue
+ * model first estimates the vehicle value from make/model/year, and the
+ * carQuote model then takes that value as a regular input alongside the risk
+ * inputs to compute the risk rate; the final premium is derived from them on
+ * the response. The request and its computed response are persisted as a
+ * one-to-one pair.
  */
 @ApplicationScoped
 public class QuoteService {
 
-    private static final String VEHICLE_VALUE_OUTPUT = "carEstimatedValue";
+    /** Output of the carEstimatedValue model. */
+    private static final String ESTIMATED_VALUE_OUTPUT = "estimatedValue";
+    /** Input of the carQuote model carrying the estimated vehicle value. */
+    private static final String ESTIMATED_VALUE_INPUT = "carEstimatedValue";
     private static final String RISK_RATE_OUTPUT = "Risk Rate";
 
     private final EntityManager em;
@@ -78,9 +82,8 @@ public class QuoteService {
     }
 
     /**
-     * Evaluates only the {@code carEstimatedValue} decision of the
-     * car-quote DMN model. That decision depends solely on make, model and
-     * year, so the risk inputs are omitted.
+     * Evaluates the standalone carEstimatedValue DMN model, which depends
+     * solely on make, model and year.
      *
      * @throws QuoteCalculationException if the decision engine cannot be reached
      *         or returns no value
@@ -91,49 +94,54 @@ public class QuoteService {
         input.put("Make", lower(make));
         input.put("Model", lower(model));
         input.put("Year", year);
-        input.put("Mileage", "0");
-        input.put("Driver Age", "42");
-        input.put("Accidents", "false");
-        input.put("Tickets", "false");
-        var body = evaluate(input);
-        return required(body, VEHICLE_VALUE_OUTPUT).decimalValue().setScale(2, RoundingMode.HALF_UP);
+        var body = evaluate(vehicleValueUrl(), input);
+        return required(body, ESTIMATED_VALUE_OUTPUT).decimalValue().setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
-     * Calls the Decision Control runtime to evaluate the car-quote DMN model
-     * once, returning both the {@code carEstimatedValue} and the
-     * {@code Risk Rate} it computes. The risk rate is driven by the model's
-     * Risk Index, to which mileage, driver age, accidents and tickets each
-     * contribute independently.
+     * Makes the two Decision Control invocations behind a quote: first the
+     * carEstimatedValue model for the vehicle value, then the carQuote model —
+     * with that value passed as a regular input — for the {@code Risk Rate}.
+     * The risk rate is driven by the model's Risk Index, to which mileage,
+     * driver age, accidents and tickets each contribute independently.
      */
     private CarQuoteResult evaluateCarQuote(QuoteRequest request) {
-        // The model's decision table keys on lowercase make/model.
+        var vehiclePrice = estimateVehicleValue(
+                request.getMake(), request.getModel(), request.getVehicleYear());
+
         var input = new HashMap<String, Object>();
-        input.put("Make", lower(request.getMake()));
-        input.put("Model", lower(request.getModel()));
-        input.put("Year", request.getVehicleYear());
+        input.put(ESTIMATED_VALUE_INPUT, vehiclePrice);
         input.put("Mileage", request.getAnnualMileage());
         input.put("Driver Age", driverAge(request.getDateOfBirth()));
         input.put("Accidents", request.isAccidentsLast5Years());
         input.put("Tickets", request.isViolationsLast3Years());
 
-        var body = evaluate(input);
-        var vehiclePrice = required(body, VEHICLE_VALUE_OUTPUT).decimalValue().setScale(2, RoundingMode.HALF_UP);
+        var body = evaluate(vehiclePriceUrl(), input);
         var riskRate = required(body, RISK_RATE_OUTPUT).decimalValue().setScale(4, RoundingMode.HALF_UP);
         return new CarQuoteResult(vehiclePrice, riskRate);
     }
 
+    private String vehiclePriceUrl() {
+        return requiredUrl(params.quote().vehiclePriceUrl(), "ih.quote.vehicle-price.url");
+    }
+
+    private String vehicleValueUrl() {
+        return requiredUrl(params.quote().vehicleValueUrl(), "ih.quote.vehicle-value.url");
+    }
+
+    private static String requiredUrl(Optional<String> url, String property) {
+        return url.filter(u -> !u.isBlank())
+                .orElseThrow(() -> new QuoteCalculationException(
+                        "Decision endpoint is not configured (" + property + ")"));
+    }
+
     /**
-     * Posts the given inputs to the Decision Control runtime and returns the
-     * parsed decision outputs.
+     * Posts the given inputs to the Decision Control runtime endpoint and
+     * returns the parsed decision outputs.
      */
-    private JsonNode evaluate(HashMap<String, Object> input) {
+    private JsonNode evaluate(String url, HashMap<String, Object> input) {
         try {
-            var vehiclePriceUrl = params.quote().vehiclePriceUrl()
-                    .filter(u -> !u.isBlank())
-                    .orElseThrow(() -> new QuoteCalculationException(
-                            "Vehicle price endpoint is not configured (ih.quote.vehicle-price.url)"));
-            var httpRequest = HttpRequest.newBuilder(URI.create(vehiclePriceUrl))
+            var httpRequest = HttpRequest.newBuilder(URI.create(url))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
                     .timeout(Duration.ofSeconds(10))

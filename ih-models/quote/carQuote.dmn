@@ -1,24 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20240513/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" expressionLanguage="https://www.omg.org/spec/DMN/20240513/FEEL/" namespace="https://kie.org/dmn/_03709CE1-A299-4537-B2BA-39E6E442C1B8" xmlns:vv="https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D" id="_DC8DF03C-7EEA-4880-83D7-0CE57999C2A9" name="carQuote">
-  <import id="_IMP00001-0000-0000-0000-000000000001" name="vehicleValues" importType="https://www.omg.org/spec/DMN/20230324/MODEL/" namespace="https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D" locationURI="carEstimatedValue.dmn" xmlns:drools="http://www.drools.org/kie/dmn/1.1" drools:modelName="carEstimatedValue" />
-  <decision name="carEstimatedValue" id="_0AFAFF2E-34CB-4235-8145-2A6ECAD61F34">
+<definitions xmlns="https://www.omg.org/spec/DMN/20240513/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" expressionLanguage="https://www.omg.org/spec/DMN/20240513/FEEL/" namespace="https://kie.org/dmn/_03709CE1-A299-4537-B2BA-39E6E442C1B8" id="_DC8DF03C-7EEA-4880-83D7-0CE57999C2A9" name="carQuote">
+  <inputData name="carEstimatedValue" id="_0AFAFF2E-34CB-4235-8145-2A6ECAD61F34">
     <variable name="carEstimatedValue" id="_A835F10F-7DE5-44A5-A189-ADD7A7268211" typeRef="number" />
-    <informationRequirement id="_8F19E6EE-CA1A-4015-B219-00BB52FFE10D">
-      <requiredInput href="#_9568137B-518F-4725-BD1B-DD949FF2110A" />
-    </informationRequirement>
-    <informationRequirement id="_464272BF-00A2-4C31-9FF4-9ACA9A2027C4">
-      <requiredInput href="#_ABE17F77-8AB4-4C04-AEF6-0BB6078EB919" />
-    </informationRequirement>
-    <informationRequirement id="_4085BB84-F70D-4BB3-A50B-E285BDE0A11F">
-      <requiredInput href="#_24D29BCE-48B3-4EA4-89A4-252787F1E4DF" />
-    </informationRequirement>
-    <knowledgeRequirement id="_KRQ00001-0000-0000-0000-000000000001">
-      <requiredKnowledge href="https://kie.org/dmn/_7A1C2F44-9E01-4B4A-8D2C-3F5E6A7B8C9D#_VVBKM001-0000-0000-0000-000000000001" />
-    </knowledgeRequirement>
-    <literalExpression id="_EVV00001-0000-0000-0000-000000000010" typeRef="number">
-      <text>vehicleValues.carEstimatedValue(Make, Model, Year)</text>
-    </literalExpression>
-  </decision>
+  </inputData>
   <decision name="Mileage Risk" id="_MR000001-0000-0000-0000-000000000001">
     <variable name="Mileage Risk" id="_MR000001-0000-0000-0000-000000000002" typeRef="number" />
     <informationRequirement id="_MR000001-0000-0000-0000-0000000000A1">
@@ -219,7 +203,7 @@
   <decision name="Insurance Premium" id="_IP000001-0000-0000-0000-000000000001">
     <variable name="Insurance Premium" id="_IP000001-0000-0000-0000-000000000002" typeRef="number" />
     <informationRequirement id="_IP000001-0000-0000-0000-0000000000A1">
-      <requiredDecision href="#_0AFAFF2E-34CB-4235-8145-2A6ECAD61F34" />
+      <requiredInput href="#_0AFAFF2E-34CB-4235-8145-2A6ECAD61F34" />
     </informationRequirement>
     <informationRequirement id="_IP000001-0000-0000-0000-0000000000A2">
       <requiredDecision href="#_RR000001-0000-0000-0000-000000000001" />
@@ -228,15 +212,6 @@
       <text>carEstimatedValue * Risk Rate</text>
     </literalExpression>
   </decision>
-  <inputData name="Make" id="_9568137B-518F-4725-BD1B-DD949FF2110A">
-    <variable name="Make" id="_820B4A48-3376-4487-A30D-580CD245D705" typeRef="string" />
-  </inputData>
-  <inputData name="Year" id="_ABE17F77-8AB4-4C04-AEF6-0BB6078EB919">
-    <variable name="Year" id="_6DDCB19C-B3D2-4E35-8AED-8D61D4009A71" typeRef="number" />
-  </inputData>
-  <inputData name="Model" id="_24D29BCE-48B3-4EA4-89A4-252787F1E4DF">
-    <variable name="Model" id="_4C619541-4067-4BC7-8AC9-57655B3A0FC2" typeRef="string" />
-  </inputData>
   <inputData name="Mileage" id="_36C0C743-1E55-4C43-8DDD-89B5757EDC7E">
     <variable name="Mileage" id="_B769F353-1FA2-4954-A245-83F0B99D0510" typeRef="number" />
   </inputData>
@@ -251,24 +226,8 @@
   </inputData>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="_6CF7B9FC-030D-4818-97AF-9D52CEC6E0AA" name="Default DRD" useAlternativeInputDataShape="false">
-      <di:extension>
-        <kie:ComponentsWidthsExtension>
-          <kie:ComponentWidths dmnElementRef="_EVV00001-0000-0000-0000-000000000010">
-            <kie:width>300</kie:width>
-          </kie:ComponentWidths>
-        </kie:ComponentsWidthsExtension>
-      </di:extension>
       <dmndi:DMNShape id="_1996FC8E-B88A-4BB8-B71A-2FFFC9157152" dmnElementRef="_0AFAFF2E-34CB-4235-8145-2A6ECAD61F34" isCollapsed="false" isListedInputData="false">
         <dc:Bounds x="332" y="112" width="160" height="80" />
-      </dmndi:DMNShape>
-      <dmndi:DMNShape id="_7ABBD228-794A-4E33-8BD6-511515617F03" dmnElementRef="_9568137B-518F-4725-BD1B-DD949FF2110A" isCollapsed="false" isListedInputData="false">
-        <dc:Bounds x="552" y="292" width="160" height="80" />
-      </dmndi:DMNShape>
-      <dmndi:DMNShape id="_AC06A26C-34AA-49CF-9599-FDBC4C537F36" dmnElementRef="_ABE17F77-8AB4-4C04-AEF6-0BB6078EB919" isCollapsed="false" isListedInputData="false">
-        <dc:Bounds x="332" y="292" width="160" height="80" />
-      </dmndi:DMNShape>
-      <dmndi:DMNShape id="_0C9C9A0F-E155-4CBC-9C0A-91301719E13E" dmnElementRef="_24D29BCE-48B3-4EA4-89A4-252787F1E4DF" isCollapsed="false" isListedInputData="false">
-        <dc:Bounds x="112" y="292" width="160" height="80" />
       </dmndi:DMNShape>
       <dmndi:DMNShape id="_E1133695-AFD5-4054-81E6-80466CFB9D96" dmnElementRef="_36C0C743-1E55-4C43-8DDD-89B5757EDC7E" isCollapsed="false" isListedInputData="false">
         <dc:Bounds x="1572" y="652" width="160" height="80" />
@@ -303,18 +262,6 @@
       <dmndi:DMNShape id="_SHAPE_IP" dmnElementRef="_IP000001-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">
         <dc:Bounds x="732" y="0" width="160" height="80" />
       </dmndi:DMNShape>
-      <dmndi:DMNEdge id="_3BF68875-D0B3-4897-9AD1-9BE3D29A2BB0" dmnElementRef="_8F19E6EE-CA1A-4015-B219-00BB52FFE10D" sourceElement="_7ABBD228-794A-4E33-8BD6-511515617F03" targetElement="_1996FC8E-B88A-4BB8-B71A-2FFFC9157152">
-        <di:waypoint x="632" y="292" />
-        <di:waypoint x="412" y="192" />
-      </dmndi:DMNEdge>
-      <dmndi:DMNEdge id="_1720FC6D-3B03-4A1C-84D2-1F80AFD0E515" dmnElementRef="_464272BF-00A2-4C31-9FF4-9ACA9A2027C4" sourceElement="_AC06A26C-34AA-49CF-9599-FDBC4C537F36" targetElement="_1996FC8E-B88A-4BB8-B71A-2FFFC9157152">
-        <di:waypoint x="412" y="292" />
-        <di:waypoint x="412" y="192" />
-      </dmndi:DMNEdge>
-      <dmndi:DMNEdge id="_45E407CB-72FA-4D04-8845-48B89ADCF69F" dmnElementRef="_4085BB84-F70D-4BB3-A50B-E285BDE0A11F" sourceElement="_0C9C9A0F-E155-4CBC-9C0A-91301719E13E" targetElement="_1996FC8E-B88A-4BB8-B71A-2FFFC9157152">
-        <di:waypoint x="192" y="292" />
-        <di:waypoint x="412" y="192" />
-      </dmndi:DMNEdge>
       <dmndi:DMNEdge id="_EDGE_MR_IN" dmnElementRef="_MR000001-0000-0000-0000-0000000000A1" sourceElement="_E1133695-AFD5-4054-81E6-80466CFB9D96" targetElement="_SHAPE_MR">
         <di:waypoint x="1652" y="652" />
         <di:waypoint x="1652" y="552" />

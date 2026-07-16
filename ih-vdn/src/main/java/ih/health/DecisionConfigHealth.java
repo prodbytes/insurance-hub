@@ -18,9 +18,11 @@ public class DecisionConfigHealth implements HealthCheck {
     @Override
     public HealthCheckResponse call() {
         var vehiclePriceUrl = params.quote().vehiclePriceUrl().orElse("");
+        var vehicleValueUrl = params.quote().vehicleValueUrl().orElse("");
         var viabilityThreshold = params.quote().viabilityThreshold();
         return HealthCheckResponse.named("decision-config")
                 .withData("ih.quote.vehicle-price.url", vehiclePriceUrl)
+                .withData("ih.quote.vehicle-value.url", vehicleValueUrl)
                 .withData("ih.quote.viability-threshold", viabilityThreshold.toString())
                 .up()
                 .build();

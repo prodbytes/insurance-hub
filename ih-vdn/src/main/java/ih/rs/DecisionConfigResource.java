@@ -26,7 +26,10 @@ public class DecisionConfigResource {
     public Map<String,String> get(){
         // Map.of rejects nulls, so surface a missing URL as an empty string.
         var vehiclePriceUrl = params.quote().vehiclePriceUrl().orElse("");
-        var result = Map.of("ih.quote.vehicle-price.url", vehiclePriceUrl);
+        var vehicleValueUrl = params.quote().vehicleValueUrl().orElse("");
+        var result = Map.of(
+                "ih.quote.vehicle-price.url", vehiclePriceUrl,
+                "ih.quote.vehicle-value.url", vehicleValueUrl);
         return result;
     }
 
