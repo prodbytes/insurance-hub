@@ -197,7 +197,7 @@
       <requiredDecision href="#_RI000001-0000-0000-0000-000000000001" />
     </informationRequirement>
     <literalExpression id="_RR000001-0000-0000-0000-000000000010" typeRef="number">
-      <text>0.04 * (1 + Risk Index * 0.15)</text>
+      <text>0.05 * (1 + Risk Index * 0.286)</text>
     </literalExpression>
   </decision>
   <decision name="Insurance Premium" id="_IP000001-0000-0000-0000-000000000001">

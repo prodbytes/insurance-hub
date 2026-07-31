@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20240513/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" expressionLanguage="https://www.omg.org/spec/DMN/20240513/FEEL/" namespace="https://kie.org/dmn/_8B2D3E55-AF12-4C5B-9E3D-4A6F7B8C9D0E" id="_6C1E9F3B-7D54-4A28-8C69-2F3E4D5C6B7A" name="quoteViabilityAudit">
+  <inputData name="RistRate" id="_VAI00001-0000-0000-0000-000000000001">
+    <variable name="RistRate" id="_VAI00001-0000-0000-0000-000000000002" typeRef="number" />
+  </inputData>
+  <decision name="ViabilityAudit" id="_VAD00001-0000-0000-0000-000000000001">
+    <variable name="ViabilityAudit" id="_VAD00001-0000-0000-0000-000000000002" typeRef="string" />
+    <informationRequirement id="_VAD00001-0000-0000-0000-0000000000A1">
+      <requiredInput href="#_VAI00001-0000-0000-0000-000000000001" />
+    </informationRequirement>
+    <decisionTable id="_VAD00001-0000-0000-0000-000000000010" typeRef="string" hitPolicy="UNIQUE" label="ViabilityAuditTable">
+      <input id="_VAD00001-0000-0000-0000-000000000011">
+        <inputExpression id="_VAD00001-0000-0000-0000-000000000012" typeRef="number">
+          <text>RistRate</text>
+        </inputExpression>
+      </input>
+      <output id="_VAD00001-0000-0000-0000-000000000013" />
+      <annotation name="Annotations" />
+      <rule id="_VAR00001-0000-0000-0000-000000000001">
+        <inputEntry id="_VAR00001-0000-0000-0000-000000000002">
+          <text>&lt; 0.05</text>
+        </inputEntry>
+        <outputEntry id="_VAR00001-0000-0000-0000-000000000003">
+          <text>&quot;ERROR&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Rate too low to be viable</text>
+        </annotationEntry>
+      </rule>
+      <rule id="_VAR00002-0000-0000-0000-000000000001">
+        <inputEntry id="_VAR00002-0000-0000-0000-000000000002">
+          <text>[0.05..0.10]</text>
+        </inputEntry>
+        <outputEntry id="_VAR00002-0000-0000-0000-000000000003">
+          <text>&quot;OK&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Healthy rate range</text>
+        </annotationEntry>
+      </rule>
+      <rule id="_VAR00003-0000-0000-0000-000000000001">
+        <inputEntry id="_VAR00003-0000-0000-0000-000000000002">
+          <text>(0.10..0.12]</text>
+        </inputEntry>
+        <outputEntry id="_VAR00003-0000-0000-0000-000000000003">
+          <text>&quot;WARNING&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Elevated rate, review recommended</text>
+        </annotationEntry>
+      </rule>
+      <rule id="_VAR00004-0000-0000-0000-000000000001">
+        <inputEntry id="_VAR00004-0000-0000-0000-000000000002">
+          <text>&gt; 0.12</text>
+        </inputEntry>
+        <outputEntry id="_VAR00004-0000-0000-0000-000000000003">
+          <text>&quot;ERROR&quot;</text>
+        </outputEntry>
+        <annotationEntry>
+          <text>Rate too high to be viable</text>
+        </annotationEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="_VADIAG01-0000-0000-0000-000000000001" name="Default DRD" useAlternativeInputDataShape="false">
+      <di:extension>
+        <kie:ComponentsWidthsExtension>
+          <kie:ComponentWidths dmnElementRef="_VAD00001-0000-0000-0000-000000000010">
+            <kie:width>60</kie:width>
+            <kie:width>140</kie:width>
+            <kie:width>140</kie:width>
+            <kie:width>280</kie:width>
+          </kie:ComponentWidths>
+        </kie:ComponentsWidthsExtension>
+      </di:extension>
+      <dmndi:DMNShape id="_VASHAPE_D" dmnElementRef="_VAD00001-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="332" y="112" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="_VASHAPE_RATE" dmnElementRef="_VAI00001-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="332" y="292" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="_VAEDGE_A1" dmnElementRef="_VAD00001-0000-0000-0000-0000000000A1" sourceElement="_VASHAPE_RATE" targetElement="_VASHAPE_D">
+        <di:waypoint x="412" y="292" />
+        <di:waypoint x="412" y="192" />
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
