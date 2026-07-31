@@ -6,4 +6,7 @@ build:
 clean:
 	@scripts/make-clean.sh
 
-.PHONY: build clean
+test:
+	@scripts/make-test.sh
+
+.PHONY: build clean test

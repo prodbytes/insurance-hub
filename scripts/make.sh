@@ -15,16 +15,26 @@ fi
 build() {
   local module
   for module in "${MODULE_DIRS[@]}"; do
-    mvn -f "$module/pom.xml" "${SETTINGS_ARGS[@]}" -U clean verify
+    mvn -f "$module/pom.xml" "${SETTINGS_ARGS[@]}" -U -DskipTests clean verify
+  done
+}
+
+# Runs the test suites only; services the tests depend on must already be up
+# (make-test.sh handles that orchestration and then calls this target).
+test_modules() {
+  local module
+  for module in "${MODULE_DIRS[@]}"; do
+    mvn -f "$module/pom.xml" "${SETTINGS_ARGS[@]}" test
   done
 }
 
 target="${1:-build}"
 case "$target" in
   build) build ;;
+  test) test_modules ;;
   *)
     echo "Unknown target: $target" >&2
-    echo "Usage: $0 build" >&2
+    echo "Usage: $0 [build|test]" >&2
     exit 1
     ;;
 esac
