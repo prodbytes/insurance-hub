@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Periodic local-dev health check: docker registry auth, database, and ih-vdn app.
+# Periodic local-dev health check: docker registry auth, database, kafka,
+# decision-control, ih-vdn, and ih-audit apps.
 set -uo pipefail
 
 # --- Resolve repo root and load .env (if present) ---------------------------
@@ -24,11 +25,17 @@ DB_CONTAINER="${DB_CONTAINER:-insurance-hub-db}"
 DB_USER="${QUARKUS_DATASOURCE_USERNAME:-quarkus}"
 DB_NAME="${POSTGRES_DB:-insurancehub}"
 
+# Kafka broker container (matches the process-compose `1-kafka` process).
+KAFKA_CONTAINER="${KAFKA_CONTAINER:-insurance-hub-kafka}"
+
 # Decision Control container (matches the process-compose `decision-control` process).
 DC_CONTAINER="${DC_CONTAINER:-decision-control}"
 
 # ih-vdn readiness endpoint (same as the process-compose http_get probe).
-IH_VDN_HEALTH_URL="${IH_VDN_HEALTH_URL:-http://127.0.0.1:8080/q/health/ready}"
+IH_VDN_HEALTH_URL="${IH_VDN_HEALTH_URL:-http://127.0.0.1:8881/q/health/ready}"
+
+# ih-audit readiness endpoint (same as the process-compose http_get probe).
+IH_AUDIT_HEALTH_URL="${IH_AUDIT_HEALTH_URL:-http://127.0.0.1:8882/q/health/ready}"
 
 # --- Output helpers ----------------------------------------------------------
 EMOJI_OK="✅"
@@ -68,14 +75,21 @@ check_database() {
   docker exec "$DB_CONTAINER" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1
 }
 
+check_kafka() {
+  command -v docker >/dev/null 2>&1 || return 1
+  docker ps --format '{{.Names}}' | grep -qx "$KAFKA_CONTAINER" || return 1
+  docker exec "$KAFKA_CONTAINER" /opt/kafka/bin/kafka-broker-api-versions.sh \
+    --bootstrap-server localhost:9092 >/dev/null 2>&1
+}
+
 check_decision_control() {
   command -v docker >/dev/null 2>&1 || return 1
   docker ps --format '{{.Names}}' | grep -qx "$DC_CONTAINER"
 }
 
-check_ih_vdn() {
-  local code
-  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$IH_VDN_HEALTH_URL" 2>/dev/null)"
+check_ready_url() {
+  local url="$1" code
+  code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$url" 2>/dev/null)"
   [ "$code" = "200" ]
 }
 
@@ -85,8 +99,10 @@ while true; do
   line+="$(report docker-hub-registry check_registry_auth "$DOCKERHUB_REGISTRY")  "
   line+="$(report aletyx-registry     check_registry_auth "$ALETYX_REGISTRY")  "
   line+="$(report database            check_database)  "
+  line+="$(report kafka               check_kafka)  "
   line+="$(report decision-control    check_decision_control)  "
-  line+="$(report ih-vdn              check_ih_vdn)"
+  line+="$(report ih-vdn              check_ready_url "$IH_VDN_HEALTH_URL")  "
+  line+="$(report ih-audit            check_ready_url "$IH_AUDIT_HEALTH_URL")"
   printf '%s\n' "$line"
   sleep "$HEALTH_INTERVAL_SECONDS"
 done

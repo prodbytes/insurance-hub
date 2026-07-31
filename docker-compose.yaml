@@ -1,0 +1,96 @@
+services:
+  # PostgreSQL database for local dev. ih-data/ is mounted as
+  # /docker-entrypoint-initdb.d: with no data volume, initdb runs on every
+  # fresh container and replays ih-data/*.sql, seeding the database from the
+  # last ./scripts/db-dump.sh snapshot. Started via process-compose
+  # (1-database), which force-recreates the container so it stays throwaway.
+  database:
+    image: postgres:16-alpine
+    container_name: insurance-hub-db
+    # wal_level=logical enables logical replication, required by Debezium
+    # (default is replica, which only supports physical replication).
+    command: postgres -c wal_level=logical
+    environment:
+      POSTGRES_USER: ${QUARKUS_DATASOURCE_USERNAME:-quarkus}
+      POSTGRES_PASSWORD: ${QUARKUS_DATASOURCE_PASSWORD:-quarkus}
+      POSTGRES_DB: ${POSTGRES_DB:-insurancehub}
+    volumes:
+      - ./ih-data:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+
+  # Single-node Kafka in KRaft mode (no ZooKeeper), same throwaway pattern as
+  # the database: no data volume, so every fresh container starts empty.
+  # Two client listeners: PLAINTEXT (host port 9092, advertised as localhost
+  # for host-side clients like ih-vdn dev mode) and DOCKER (container-only
+  # port 29092, advertised as kafka:29092 for other compose services like
+  # debezium — they can't use 9092 because the broker would redirect them to
+  # localhost, which inside their container is themselves).
+  kafka:
+    image: apache/kafka:4.0.0
+    container_name: insurance-hub-kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,DOCKER://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_ADVERTISED_HOST:-localhost}:9092,DOCKER://kafka:29092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,DOCKER:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    ports:
+      - "9092:9092"
+
+  # Debezium (Kafka Connect) streaming database changes to Kafka. Reaches
+  # both peers over the compose network: postgres at database:5432 and the
+  # broker via its DOCKER listener at kafka:29092. Internal Connect topics
+  # (config/offsets/status) live in the broker, which is throwaway, so offsets
+  # reset together with the broker and the connector re-snapshots — consistent
+  # with the rest of the stack. The postgres connector itself is registered by
+  # scripts/debezium-register.sh (process-compose 2-debezium-connector) once
+  # the REST API on 8083 is up.
+  debezium:
+    image: quay.io/debezium/connect:3.0
+    container_name: insurance-hub-debezium
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      GROUP_ID: "1"
+      CONFIG_STORAGE_TOPIC: debezium_connect_config
+      OFFSET_STORAGE_TOPIC: debezium_connect_offsets
+      STATUS_STORAGE_TOPIC: debezium_connect_status
+    ports:
+      - "8083:8083"
+
+  # Aletyx Decision Control, throwaway like the others (force-recreate + down
+  # via process-compose). Host port 8880 -> container 8080 to avoid colliding
+  # with ih-vdn on 8881. extra_hosts lets the container reach the host's :5432
+  # (the database service publishes there) on Linux/WSL2. DC builds its
+  # datasource AND detects the DB type from POSTGRES_* (host.docker.internal
+  # not localhost since it runs in a container); configuring via
+  # SPRING_DATASOURCE_URL instead connects fine but makes DC's detector fall
+  # back to reporting "H2 (in-memory)". Hibernate ddl-auto=update creates its
+  # own tables there. APP_HOST is the public URL the browser uses to reach DC;
+  # the SPA reads it from env.json and uses it as the base for all its API
+  # calls (/ping, /api/authz/*, ...). The image defaults it to
+  # http://localhost:8080, which is not DC, so those calls 404
+  # and the action cards render disabled. Must match the host-side port (8880).
+  decision-control:
+    image: ${DECISION_CONTROL_IMAGE}
+    container_name: decision-control
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-insurancehub}
+      POSTGRES_USER: ${DC_DATASOURCE_USERNAME:-quarkus}
+      POSTGRES_PASSWORD: ${DC_DATASOURCE_PASSWORD:-quarkus}
+      HIBERNATE_DDL_AUTO: update
+      ALETYX_OIDC_PROVIDER: none
+      APP_HOST: ${APP_HOST:-http://localhost:8880}
+    ports:
+      - "8880:8080"

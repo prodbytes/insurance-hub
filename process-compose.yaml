@@ -1,25 +1,22 @@
 processes:
-  # Periodic health check: docker registry auth, database, and ih-vdn readiness.
+  # Periodic health check: docker registry auth, database, kafka,
+  # decision-control, and ih-vdn readiness.
   0-health:
     command: ./scripts/health.sh
     working_dir: .
 
-  # PostgreSQL database, run as a throwaway container for local dev.
-  # ih-data/ is mounted as /docker-entrypoint-initdb.d: with no volume, initdb
-  # runs on every startup and replays ih-data/*.sql, seeding the database from
-  # the last ./scripts/db-dump.sh snapshot. Runs from the repo root, so $(pwd)
-  # resolves to it (docker -v needs an absolute path).
+  # PostgreSQL database, defined in docker-compose.yaml and kept throwaway:
+  # --force-recreate replaces any leftover container so initdb reruns on every
+  # startup and replays ih-data/*.sql (see the compose file for details).
+  # `down` (not `stop`) on shutdown removes the container for the same reason.
+  # --exit-code-from makes `up` propagate the container's exit code (plain
+  # attached `up` always exits 0), so `restart: on_failure` actually fires
+  # when the container dies or is stopped externally.
   1-database:
-    command: >-
-      docker run --rm --name insurance-hub-db
-      -e POSTGRES_USER=${QUARKUS_DATASOURCE_USERNAME:-quarkus}
-      -e POSTGRES_PASSWORD=${QUARKUS_DATASOURCE_PASSWORD:-quarkus}
-      -e POSTGRES_DB=${POSTGRES_DB:-insurancehub}
-      -v "$(pwd)/ih-data:/docker-entrypoint-initdb.d:ro"
-      -p 5432:5432
-      postgres:16-alpine
+    command: docker compose up --force-recreate --exit-code-from database database
+    working_dir: .
     shutdown:
-      command: docker stop insurance-hub-db
+      command: docker compose down database
       timeout_seconds: 30
     readiness_probe:
       exec:
@@ -32,35 +29,79 @@ processes:
       restart: on_failure
       backoff_seconds: 5
 
-  # Aletyx Decision Control, run as a throwaway container against the local PostgreSQL.
-  # Host port 8081 -> container 8080 to avoid colliding with ih-vdn on 8080.
-  # --add-host lets the container reach the host's :5432 (the database process) on Linux/WSL2.
-  # Shares the Quarkus database via POSTGRES_* (host.docker.internal not localhost since it
-  # runs in a container). DC builds its datasource AND detects the DB type from these vars, so
-  # the startup banner reports PostgreSQL correctly; configuring via SPRING_DATASOURCE_URL
-  # instead connects fine but makes DC's detector fall back to reporting "H2 (in-memory)".
-  # Hibernate ddl-auto=update creates its own tables there.
-  # APP_HOST is the public URL the browser uses to reach DC; the SPA reads it from env.json and
-  # uses it as the base for all its API calls (/ping, /api/authz/*, ...). The image defaults it
-  # to http://localhost:8080, which here is the ih-vdn app, so those calls 404 and the action
-  # cards render disabled. Must match the host-side port (8081).
-  2-decision-control:
-    command: >-
-      docker run --rm --name decision-control
-      --add-host=host.docker.internal:host-gateway
-      -p 8081:8080
-      -e SPRING_PROFILES_ACTIVE=postgres
-      -e POSTGRES_HOST=host.docker.internal
-      -e POSTGRES_PORT=5432
-      -e POSTGRES_DB=${POSTGRES_DB:-insurancehub}
-      -e POSTGRES_USER=${DC_DATASOURCE_USERNAME:-quarkus}
-      -e POSTGRES_PASSWORD=${DC_DATASOURCE_PASSWORD:-quarkus}
-      -e HIBERNATE_DDL_AUTO=update
-      -e ALETYX_OIDC_PROVIDER=none
-      -e APP_HOST=${APP_HOST:-http://localhost:8081}
-      ${DECISION_CONTROL_IMAGE}
+  # Kafka broker (single-node KRaft), defined in docker-compose.yaml with the
+  # same throwaway semantics as the database: force-recreate + down so it
+  # starts empty on every run. No dependents yet; ih-vdn can point at it with
+  # kafka.bootstrap.servers=localhost:9092.
+  1-kafka:
+    command: docker compose up --force-recreate --exit-code-from kafka kafka
+    working_dir: .
     shutdown:
-      command: docker stop decision-control
+      command: docker compose down kafka
+      timeout_seconds: 30
+    readiness_probe:
+      exec:
+        command: docker exec insurance-hub-kafka /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+      initial_delay_seconds: 3
+      period_seconds: 3
+      timeout_seconds: 10
+      failure_threshold: 20
+    availability:
+      restart: on_failure
+      backoff_seconds: 5
+
+  # Debezium Connect (docker-compose.yaml `debezium` service), streaming
+  # database changes to Kafka. Needs both peers up: the database for the
+  # replication slot, the broker for Connect's own storage topics.
+  2-debezium:
+    command: docker compose up --force-recreate --exit-code-from debezium debezium
+    working_dir: .
+    shutdown:
+      command: docker compose down debezium
+      timeout_seconds: 30
+    depends_on:
+      1-database:
+        condition: process_healthy
+      1-kafka:
+        condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        port: 8083
+        path: /connectors
+        scheme: http
+      initial_delay_seconds: 5
+      period_seconds: 5
+      timeout_seconds: 5
+      failure_threshold: 60
+    availability:
+      restart: on_failure
+      backoff_seconds: 5
+
+  # Registers the postgres connector on the Debezium REST API (idempotent PUT,
+  # see the script), then stays in the foreground watching its status. Exits
+  # nonzero if the connector fails or the API disappears, so on_failure reruns
+  # the script and re-registers the connector.
+  2-debezium-connector:
+    command: ./scripts/debezium-register.sh
+    working_dir: .
+    depends_on:
+      2-debezium:
+        condition: process_healthy
+    availability:
+      restart: on_failure
+      backoff_seconds: 5
+
+  # Aletyx Decision Control, defined in docker-compose.yaml with the same
+  # throwaway semantics as the database (force-recreate + down). Startup
+  # ordering stays here (depends_on 1-database), not in the compose file, so
+  # `docker compose up decision-control` never drags the database service
+  # along and fights process-compose over it.
+  2-decision-control:
+    command: docker compose up --force-recreate --exit-code-from decision-control decision-control
+    working_dir: .
+    shutdown:
+      command: docker compose down decision-control
       timeout_seconds: 30
     depends_on:
       1-database:
@@ -68,13 +109,35 @@ processes:
     readiness_probe:
       http_get:
         host: 127.0.0.1
-        port: 8081
+        port: 8880
         path: /
         scheme: http
       initial_delay_seconds: 5
       period_seconds: 15
       timeout_seconds: 5
       failure_threshold: 120   
+
+  # ih-audit Quarkus app in dev mode on port 8882: the Kafka message reader.
+  # Needs the broker (it consumes every topic) and the database (its dev
+  # datasource points at the shared postgres, and the readiness check pings it).
+  3-ih-audit:
+    command: ./ih-audit/scripts/dev-start.sh
+    working_dir: .
+    depends_on:
+      1-database:
+        condition: process_healthy
+      1-kafka:
+        condition: process_healthy
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        port: 8882
+        path: /q/health/ready
+        scheme: http
+      initial_delay_seconds: 5
+      period_seconds: 15
+      timeout_seconds: 5
+      failure_threshold: 120
 
   # ih-vdn Quarkus app in dev mode; starts once Decision Control is healthy so its
   # dev-start script can upload the decision models before the app comes up
@@ -88,7 +151,7 @@ processes:
     readiness_probe:
       http_get:
         host: 127.0.0.1
-        port: 8080
+        port: 8881
         path: /q/health/ready
         scheme: http
       initial_delay_seconds: 5

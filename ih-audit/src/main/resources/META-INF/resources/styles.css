@@ -1,0 +1,47 @@
+/* InsuranceHub Audit — Kafka message reader styles. */
+
+/* Same Aletyx-inspired palette as ih-vdn: orange accents on near-black. */
+html {
+    --lumo-primary-color: #ff7700;
+    --lumo-primary-color-50pct: rgba(255, 119, 0, 0.5);
+    --lumo-primary-color-10pct: rgba(255, 119, 0, 0.1);
+    --lumo-primary-text-color: #ff7700;
+    --lumo-primary-contrast-color: #ffffff;
+
+    --lumo-base-color: #0c0d0f;
+    --lumo-body-text-color: #f0f0f0;
+    --lumo-header-text-color: #ffffff;
+    --lumo-secondary-text-color: #9c9c9d;
+
+    --lumo-contrast-5pct: rgba(255, 255, 255, 0.05);
+    --lumo-contrast-10pct: rgba(255, 255, 255, 0.1);
+    --lumo-contrast-20pct: rgba(255, 255, 255, 0.2);
+}
+
+.messages__title {
+    margin: 0;
+}
+
+.messages__subtitle {
+    color: var(--lumo-secondary-text-color);
+    margin: 0;
+}
+
+/* Single-line cells: the grid always fits the viewport width, long content
+   is ellipsized (full payload via tooltip or row click). */
+.messages__grid vaadin-grid-cell-content {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Full message payload in the row-click dialog. */
+.messages__detail {
+    font-family: var(--lumo-font-family-monospace, monospace);
+    font-size: var(--lumo-font-size-s);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 60vh;
+    overflow: auto;
+    margin: 0 0 var(--lumo-space-m) 0;
+}

@@ -12,6 +12,7 @@
 
     <modules>
         <module>ih-vdn</module>
+        <module>ih-audit</module>
     </modules>
 
 </project>
