@@ -1,4 +1,4 @@
-package ih.audit;
+package ih.audit.view;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -16,22 +16,19 @@ import com.vaadin.flow.component.html.Pre;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 
-import ih.audit.KafkaMessageStore.CapturedMessage;
-import jakarta.inject.Inject;
+import ih.audit.util.KafkaMessageStore;
+import ih.audit.util.KafkaMessageStore.CapturedMessage;
 
 /**
- * Message reader: lists every message captured from Kafka (all topics),
- * newest first, refreshing automatically via UI polling. Columns have fixed
- * widths with single-line ellipsis cells so the table always fits the
- * viewport width; click a row to inspect the full message.
+ * Shared message table: a newest-first grid over a filtered snapshot of the
+ * captured Kafka messages, refreshing automatically via UI polling. Columns
+ * have fixed widths with single-line ellipsis cells so the table always fits
+ * the viewport width; click a row to inspect the full message. Subclasses
+ * choose the title and which messages their page includes.
  */
-@PageTitle("InsuranceHub | Audit")
-@Route("")
-public class MessagesView extends VerticalLayout {
+abstract class MessageGridView extends VerticalLayout {
 
     private static final DateTimeFormatter TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneId.systemDefault());
@@ -42,14 +39,13 @@ public class MessagesView extends VerticalLayout {
     private final Paragraph subtitle = new Paragraph();
     private Registration pollListener;
 
-    @Inject
-    public MessagesView(KafkaMessageStore store, ObjectMapper mapper) {
+    MessageGridView(KafkaMessageStore store, ObjectMapper mapper, String title) {
         this.store = store;
         this.mapper = mapper;
         setSizeFull();
 
-        var title = new H1("Kafka messages");
-        title.addClassName("messages__title");
+        var heading = new H1(title);
+        heading.addClassName("messages__title");
         subtitle.addClassName("messages__subtitle");
 
         grid.addColumn(m -> TIMESTAMP.format(m.timestamp()))
@@ -59,6 +55,7 @@ public class MessagesView extends VerticalLayout {
                 .setTooltipGenerator(CapturedMessage::topic);
         grid.addColumn(m -> m.partition() + "/" + m.offset())
                 .setHeader("Part/Offset").setWidth("110px").setFlexGrow(0);
+        addExtraColumns(grid);
         grid.addColumn(CapturedMessage::key)
                 .setHeader("Key").setWidth("220px").setFlexGrow(0)
                 .setTooltipGenerator(CapturedMessage::key);
@@ -81,10 +78,24 @@ public class MessagesView extends VerticalLayout {
         });
         grid.setSizeFull();
 
-        add(title, subtitle, grid);
+        add(heading, subtitle, grid);
         expand(grid);
         refresh();
     }
+
+    /**
+     * Hook for page-specific columns, added between the standard Part/Offset
+     * and Key columns. Called from the constructor, before subclass fields
+     * are initialized.
+     */
+    protected void addExtraColumns(Grid<CapturedMessage> grid) {
+    }
+
+    /** Whether the message belongs on this page. */
+    protected abstract boolean include(CapturedMessage message);
+
+    /** The subtitle line for the current row count. */
+    protected abstract String subtitle(int count);
 
     @Override
     protected void onAttach(AttachEvent attachEvent) {
@@ -104,10 +115,9 @@ public class MessagesView extends VerticalLayout {
     }
 
     private void refresh() {
-        var snapshot = store.snapshot();
+        var snapshot = store.snapshot().stream().filter(this::include).toList();
         grid.setItems(snapshot);
-        subtitle.setText("%d messages captured, all topics, newest first."
-                .formatted(snapshot.size()));
+        subtitle.setText(subtitle(snapshot.size()));
     }
 
     private void openDetails(CapturedMessage m) {

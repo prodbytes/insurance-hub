@@ -1,4 +1,4 @@
-package ih.audit;
+package ih.audit.view;
 
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.page.AppShellConfigurator;

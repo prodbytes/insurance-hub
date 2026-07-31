@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20240513/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0" expressionLanguage="https://www.omg.org/spec/DMN/20240513/FEEL/" namespace="https://kie.org/dmn/_8B2D3E55-AF12-4C5B-9E3D-4A6F7B8C9D0E" id="_6C1E9F3B-7D54-4A28-8C69-2F3E4D5C6B7A" name="quoteViabilityAudit">
-  <inputData name="RistRate" id="_VAI00001-0000-0000-0000-000000000001">
-    <variable name="RistRate" id="_VAI00001-0000-0000-0000-000000000002" typeRef="number" />
-  </inputData>
-  <decision name="ViabilityAudit" id="_VAD00001-0000-0000-0000-000000000001">
-    <variable name="ViabilityAudit" id="_VAD00001-0000-0000-0000-000000000002" typeRef="string" />
+  <decision name="AuditResult" id="_VAD00001-0000-0000-0000-000000000001">
+    <variable name="AuditResult" id="_VAD00001-0000-0000-0000-000000000002" typeRef="string" />
     <informationRequirement id="_VAD00001-0000-0000-0000-0000000000A1">
       <requiredInput href="#_VAI00001-0000-0000-0000-000000000001" />
     </informationRequirement>
-    <decisionTable id="_VAD00001-0000-0000-0000-000000000010" typeRef="string" hitPolicy="UNIQUE" label="ViabilityAuditTable">
+    <decisionTable id="_VAD00001-0000-0000-0000-000000000010" typeRef="string" hitPolicy="UNIQUE" label="AuditResult">
       <input id="_VAD00001-0000-0000-0000-000000000011">
         <inputExpression id="_VAD00001-0000-0000-0000-000000000012" typeRef="number">
-          <text>RistRate</text>
+          <text>risk_rate</text>
         </inputExpression>
       </input>
       <output id="_VAD00001-0000-0000-0000-000000000013" />
@@ -62,6 +59,12 @@
       </rule>
     </decisionTable>
   </decision>
+  <inputData name="risk_rate" id="_VAI00001-0000-0000-0000-000000000001">
+    <variable name="risk_rate" id="_VAI00001-0000-0000-0000-000000000002" typeRef="number" />
+  </inputData>
+  <textAnnotation id="_7A195F7A-B71D-4182-9CE6-560CA41D36CC">
+    <text>@quote_response</text>
+  </textAnnotation>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="_VADIAG01-0000-0000-0000-000000000001" name="Default DRD" useAlternativeInputDataShape="false">
       <di:extension>
@@ -79,6 +82,9 @@
       </dmndi:DMNShape>
       <dmndi:DMNShape id="_VASHAPE_RATE" dmnElementRef="_VAI00001-0000-0000-0000-000000000001" isCollapsed="false" isListedInputData="false">
         <dc:Bounds x="332" y="292" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="_BC49AFF7-A306-4B11-B124-B978D5FB45A3" dmnElementRef="_7A195F7A-B71D-4182-9CE6-560CA41D36CC" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="-20" y="-20" width="200" height="60" />
       </dmndi:DMNShape>
       <dmndi:DMNEdge id="_VAEDGE_A1" dmnElementRef="_VAD00001-0000-0000-0000-0000000000A1" sourceElement="_VASHAPE_RATE" targetElement="_VASHAPE_D">
         <di:waypoint x="412" y="292" />

@@ -1,4 +1,4 @@
-package ih.audit;
+package ih.audit.util;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -15,6 +15,7 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import ih.audit.view.MessagesView;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
