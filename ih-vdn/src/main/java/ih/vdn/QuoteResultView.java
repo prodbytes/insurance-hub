@@ -17,7 +17,6 @@ import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
 
 import ih.domain.QuoteRequest;
 import ih.domain.QuoteResponse;
@@ -108,10 +107,9 @@ public class QuoteResultView extends VerticalLayout implements HasUrlParameter<L
         startButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
         startButton.addClickListener(e -> startButton.getUI().ifPresent(ui -> ui.navigate(ThankYouView.class)));
 
-        var newQuote = new RouterLink("", QuoteView.class);
-        var newQuoteButton = new Button("New quote");
-        newQuoteButton.addThemeVariants(ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_TERTIARY);
-        newQuote.add(newQuoteButton);
+        var newQuote = new Button("New quote");
+        newQuote.addThemeVariants(ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_TERTIARY);
+        newQuote.addClickListener(e -> newQuote.getUI().ifPresent(ui -> ui.navigate(QuoteView.class)));
 
         var actions = new HorizontalLayout(startButton, newQuote);
         actions.addClassName("hero__actions");
@@ -134,10 +132,9 @@ public class QuoteResultView extends VerticalLayout implements HasUrlParameter<L
         var message = new Paragraph("It may have expired or never existed. Start a new quote to get an estimate.");
         message.addClassName("hero__subtitle");
 
-        var newQuote = new RouterLink("", QuoteView.class);
-        var newQuoteButton = new Button("Start a new quote");
-        newQuoteButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
-        newQuote.add(newQuoteButton);
+        var newQuote = new Button("Start a new quote");
+        newQuote.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
+        newQuote.addClickListener(e -> newQuote.getUI().ifPresent(ui -> ui.navigate(QuoteView.class)));
 
         var text = new VerticalLayout(eyebrow, title, message, newQuote);
         text.addClassName("hero__text");

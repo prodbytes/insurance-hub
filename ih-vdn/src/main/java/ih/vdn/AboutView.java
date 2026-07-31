@@ -8,7 +8,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
 
 /**
  * About page describing the purpose of this demo application.
@@ -51,10 +50,9 @@ public class AboutView extends VerticalLayout {
                         + "are modeled as explicit, governable business decisions rather than scattered throughout the code.");
         decisionParagraph.addClassName("hero__subtitle");
 
-        var back = new RouterLink("", MainView.class);
-        var backButton = new Button("Back to home");
-        backButton.addThemeVariants(ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_TERTIARY);
-        back.add(backButton);
+        var back = new Button("Back to home");
+        back.addThemeVariants(ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_TERTIARY);
+        back.addClickListener(e -> back.getUI().ifPresent(ui -> ui.navigate(MainView.class)));
 
         var text = new VerticalLayout(eyebrow, title, intro, devParagraph, decisionParagraph, back);
         text.addClassName("hero__text");

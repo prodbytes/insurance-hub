@@ -8,7 +8,6 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
 
 /**
  * Generic error page shown when a quote cannot be calculated (for example, the
@@ -42,10 +41,9 @@ public class ErrorView extends VerticalLayout {
                         + "Your details were not saved. Please try again in a moment.");
         message.addClassName("hero__subtitle");
 
-        var retry = new RouterLink("", QuoteView.class);
-        var retryButton = new Button("Try again");
-        retryButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
-        retry.add(retryButton);
+        var retry = new Button("Try again");
+        retry.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
+        retry.addClickListener(e -> retry.getUI().ifPresent(ui -> ui.navigate(QuoteView.class)));
 
         var text = new VerticalLayout(eyebrow, title, message, retry);
         text.addClassName("hero__text");

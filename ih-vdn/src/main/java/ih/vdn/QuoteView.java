@@ -27,7 +27,6 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
 
 /**
  * Quote request form collecting the information usually needed for a vehicle
@@ -143,10 +142,9 @@ public class QuoteView extends VerticalLayout {
             }
         });
 
-        var back = new RouterLink("", MainView.class);
-        var backButton = new Button("Back to home");
-        backButton.addThemeVariants(ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_TERTIARY);
-        back.add(backButton);
+        var back = new Button("Back to home");
+        back.addThemeVariants(ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_TERTIARY);
+        back.addClickListener(e -> back.getUI().ifPresent(ui -> ui.navigate(MainView.class)));
 
         var actions = new HorizontalLayout(submit, back);
         actions.addClassName("hero__actions");

@@ -10,7 +10,6 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
 
 /**
  * Confirmation page shown after the user accepts a quote.
@@ -53,10 +52,9 @@ public class ThankYouView extends VerticalLayout {
         aletyxButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_LARGE);
         aletyx.add(aletyxButton);
 
-        var home = new RouterLink("", MainView.class);
-        var homeButton = new Button("Back to home");
-        homeButton.addThemeVariants(ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_TERTIARY);
-        home.add(homeButton);
+        var home = new Button("Back to home");
+        home.addThemeVariants(ButtonVariant.LUMO_LARGE, ButtonVariant.LUMO_TERTIARY);
+        home.addClickListener(e -> home.getUI().ifPresent(ui -> ui.navigate(MainView.class)));
 
         var actions = new HorizontalLayout(aletyx, home);
         actions.addClassName("hero__actions");
