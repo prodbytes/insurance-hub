@@ -112,7 +112,7 @@ models_upload_main() {
   # Declared with their defaults only here, after .env is sourced, so values
   # from the environment or .env win over the defaults.
   local MODELS_DIR="${MODELS_DIR:-$REPO_ROOT/ih-models}"
-  local DC_BASE_URL="${DC_BASE_URL:-http://localhost:8081}"
+  local DC_BASE_URL="${DC_BASE_URL:-http://localhost:8880}"
   UPLOAD_URL="$DC_BASE_URL/api/management/upload"
   UNITS_URL="$DC_BASE_URL/api/management/units"
   EXPLORER_URL="$DC_BASE_URL/v3/api-docs"

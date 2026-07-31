@@ -95,9 +95,9 @@ container will:
 - log in to the Aletyx registry with the secrets above,
 - start PostgreSQL, Decision Control, and ih-vdn via process-compose,
 - upload the DMN model(s) to Decision Control and wire the runtime URL into the app,
-- make ports **8080** (the app) and **8081** (Decision Control) public.
+- make ports **8881** (the app), **8882** (ih-audit) and **8880** (Decision Control) public.
 
-When the services are healthy, open the forwarded URL for port **8080** (the **Ports** panel
+When the services are healthy, open the forwarded URL for port **8881** (the **Ports** panel
 lists both, or the boot log prints the full URLs).
 
 ### 3. Attach to the running processes
@@ -152,9 +152,10 @@ devbox services up        # or: scripts/process-start.sh
 This logs in to the registry, brings up PostgreSQL and Decision Control, uploads the decision
 model, and runs ih-vdn in Quarkus dev mode. Then open:
 
-- **App:** http://localhost:8080
-- **Decision Control:** http://localhost:8081
-- **Swagger UI:** http://localhost:8080/q/swagger-ui
+- **App:** http://localhost:8881
+- **Audit (Kafka messages):** http://localhost:8882
+- **Decision Control:** http://localhost:8880
+- **Swagger UI:** http://localhost:8881/q/swagger-ui
 
 To stop the stack, quit process-compose (`Ctrl-C`, or `q` in the TUI); the throwaway containers
 are stopped on shutdown.
@@ -181,7 +182,7 @@ unit instead of creating a duplicate one.
 > and the app calls the unit's version-independent `/latest` runtime URL — which serves the
 > newest *enabled* version. So after editing a model, just re-run the startup upload (or
 > restart `ih-vdn/scripts/dev-start.sh`) and the change is live. Versions uploaded through
-> the Decision Control UI at :8081 also take effect once enabled.
+> the Decision Control UI at :8880 also take effect once enabled.
 
 ## Repository layout
 

@@ -12,7 +12,7 @@ Import the project to the IDE of your choosing as a Maven project.
 
 Run the Quarkus application using your preferred method like IDE plugin, CLI `quarkus dev` or Maven  `mvnw quarkus:dev` (Windows), or `./mvnw quarkus:dev` (Mac & Linux) (or shorthand `mvn` as defaultGoal is `quarkus:dev`).
 
-Open [http://localhost:8080/](http://localhost:8080/) in browser.
+Open [http://localhost:8881/](http://localhost:8881/) in browser.
 
 If you want to run your app locally in production mode, call `mvnw package` (Windows), or `./mvnw package` (Mac & Linux)
 and then

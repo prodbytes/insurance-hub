@@ -19,7 +19,7 @@
       "moby": false
     },
     // gh CLI, baked in at build time so start.sh never has to download it
-    // (used to set port 8080 public in Codespaces).
+    // (used to set the app ports public in Codespaces).
     "ghcr.io/devcontainers/features/github-cli:1": {},
     // A standalone JDK on a stable path (JAVA_HOME) so the VS Code Java
     // language server can compile. GraalVM CE 25 (SDKMAN id `25.0.2-graalce`),
@@ -29,12 +29,13 @@
     }
   },
 
-  "forwardPorts": [8080, 8081, 5432],
+  "forwardPorts": [8880, 8881, 8882, 5432],
   "portsAttributes": {
     "5005": { "label": "jdwp", "onAutoForward": "silent" },
     "5432": { "label": "postgres", "onAutoForward": "silent" },
-    "8080": { "label": "ih-vdn", "onAutoForward": "silent", "visibility": "public" },
-    "8081": { "label": "decision-control", "onAutoForward": "silent", "visibility": "public" }
+    "8880": { "label": "decision-control", "onAutoForward": "silent", "visibility": "public" },
+    "8881": { "label": "ih-vdn", "onAutoForward": "silent", "visibility": "public" },
+    "8882": { "label": "ih-audit", "onAutoForward": "silent", "visibility": "public" }
   },
 
   // NOTE: DECISION_CONTROL_IMAGE and the ALETYX_* private-registry credentials

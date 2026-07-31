@@ -35,14 +35,14 @@ ensure_gh() {
   command -v gh >/dev/null 2>&1
 }
 
-# In a Codespace, expose the ih-vdn app (8080) and decision-control (8081)
-# publicly. Visibility set in devcontainer.json only applies at creation;
-# this re-applies on every boot.
+# In a Codespace, expose decision-control (8880), the ih-vdn app (8881), and
+# ih-audit (8882) publicly. Visibility set in devcontainer.json only applies
+# at creation; this re-applies on every boot.
 make_ports_public() {
   [ -n "${CODESPACE_NAME:-}" ] || { echo "Not a Codespace; skipping public ports."; return 0; }
   ensure_gh || { echo "gh unavailable; set port visibility manually."; return 0; }
-  echo "Making ports 8080 and 8081 public..."
-  gh codespace ports visibility 8080:public 8081:public -c "$CODESPACE_NAME" \
+  echo "Making ports 8880, 8881 and 8882 public..."
+  gh codespace ports visibility 8880:public 8881:public 8882:public -c "$CODESPACE_NAME" \
     || echo "Could not set ports public (org policy may block public ports)."
 }
 make_ports_public || true
@@ -92,21 +92,24 @@ registry_login
 
 # Print the URLs to reach the apps once they finish starting.
 print_endpoints() {
-  local b8080 b8081
+  local b_dc b_vdn b_audit
   if [ -n "${CODESPACE_NAME:-}" ]; then
     local dom="${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}"
-    b8080="https://${CODESPACE_NAME}-8080.${dom}"
-    b8081="https://${CODESPACE_NAME}-8081.${dom}"
+    b_dc="https://${CODESPACE_NAME}-8880.${dom}"
+    b_vdn="https://${CODESPACE_NAME}-8881.${dom}"
+    b_audit="https://${CODESPACE_NAME}-8882.${dom}"
   else
-    b8080="http://localhost:8080"
-    b8081="http://localhost:8081"
+    b_dc="http://localhost:8880"
+    b_vdn="http://localhost:8881"
+    b_audit="http://localhost:8882"
   fi
   cat <<EOF
 
 ────────────────────────────────────────────────────────────
  Services are starting. Once healthy, open:
-   • ih-vdn (insurance app) : ${b8080}
-   • Decision Control       : ${b8081}
+   • ih-vdn (insurance app) : ${b_vdn}
+   • ih-audit (messages)    : ${b_audit}
+   • Decision Control       : ${b_dc}
 You can also find the ports on the "Ports" panel, and
 manage running services witn the following command: 
   devbox services attach
